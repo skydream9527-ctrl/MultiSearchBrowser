@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">搜索浏览器</string>
+    <string name="search_hint">输入搜索内容</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_windows">多窗口</string>
+    <string name="tab_back">返回</string>
+    <string name="tab_profile">我的</string>
+    <string name="history_title">浏览历史</string>
+    <string name="bookmarks_title">收藏内容</string>
+    <string name="avatar_title">上传头像</string>
+    <string name="clear_history">清空历史</string>
+    <string name="no_history">暂无浏览历史</string>
+    <string name="no_bookmarks">暂无收藏内容</string>
+    <string name="add_bookmark">添加收藏</string>
+    <string name="remove_bookmark">取消收藏</string>
+    <string name="new_window">新建窗口</string>
+    <string name="close_window">关闭窗口</string>
+    <string name="select_avatar">选择头像</string>
+    <string name="avatar_uploaded">头像上传成功</string>
+    <string name="loading">加载中...</string>
+    <string name="error_loading">加载失败</string>
+    <string name="search_engine_baidu">百度</string>
+    <string name="search_engine_sogou">搜狗</string>
+    <string name="search_engine_bilibili">B站</string>
+    <string name="search_engine_douyin">抖音</string>
+    <string name="search_engine_bing">必应</string>
+    <string name="search_engine_doubao">豆包</string>
+    <string name="search_engine_qianwen">千问</string>
+</resources>

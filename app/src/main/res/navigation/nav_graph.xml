@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.browser.app.ui.home.HomeFragment"
+        android:label="首页">
+        <action
+            android:id="@+id/action_homeFragment_to_webviewFragment"
+            app:destination="@id/webviewFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/windowsFragment"
+        android:name="com.browser.app.ui.tabs.WindowsFragment"
+        android:label="多窗口" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.browser.app.ui.profile.ProfileFragment"
+        android:label="我的">
+        <action
+            android:id="@+id/action_profileFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_bookmarksFragment"
+            app:destination="@id/bookmarksFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/webviewFragment"
+        android:name="com.browser.app.ui.webview.WebviewFragment"
+        android:label="网页">
+        <argument
+            android:name="url"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.browser.app.ui.profile.HistoryFragment"
+        android:label="浏览历史" />
+
+    <fragment
+        android:id="@+id/bookmarksFragment"
+        android:name="com.browser.app.ui.profile.BookmarksFragment"
+        android:label="收藏内容" />
+
+</navigation>
