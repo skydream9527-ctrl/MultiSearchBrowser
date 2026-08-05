@@ -83,7 +83,7 @@
       <div class="notch-speaker"></div>
     </div>
     <div class="status-bar">
-      <span>20:48</span>
+      <span>09:50</span>
       <span>📶 5G  🔋 100%</span>
     </div>
     <div class="app-header">
@@ -92,12 +92,12 @@
     </div>
     <div class="app-body">
       
-          <div style="display:flex; gap:6px; margin-bottom:12px;">
-            <button class="action-btn" style="flex:1; font-size:12px; padding:6px;" onclick="switchEngine('google')">Google</button>
-            <button class="action-btn" style="flex:1; font-size:12px; padding:6px; background:#1e293b; color:#fff;" onclick="switchEngine('bing')">Bing</button>
-            <button class="action-btn" style="flex:1; font-size:12px; padding:6px; background:#1e293b; color:#fff;" onclick="switchEngine('baidu')">Baidu</button>
+          <div style="display:flex; gap:6px; margin-bottom:14px;">
+            <button class="action-btn" id="btnGoogle" style="flex:1; font-size:12px; padding:8px 0;" onclick="switchEngine('google')">Google</button>
+            <button class="action-btn" id="btnBing" style="flex:1; font-size:12px; padding:8px 0; background:#1e293b; color:#fff;" onclick="switchEngine('bing')">Bing</button>
+            <button class="action-btn" id="btnBaidu" style="flex:1; font-size:12px; padding:8px 0; background:#1e293b; color:#fff;" onclick="switchEngine('baidu')">Baidu</button>
           </div>
-          <iframe id="webFrame" src="https://www.google.com/search?igu=1" style="width:100%; height:320px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:#fff;"></iframe>
+          <iframe id="webFrame" src="https://www.google.com/search?igu=1" style="width:100%; height:440px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); background:#fff;"></iframe>
         
     </div>
     <div class="home-bar"></div>
@@ -107,9 +107,13 @@
     
           function switchEngine(eng) {
             const frame = document.getElementById('webFrame');
-            if(eng === 'google') frame.src = 'https://www.google.com/search?igu=1';
-            else if(eng === 'bing') frame.src = 'https://www.bing.com';
-            else if(eng === 'baidu') frame.src = 'https://m.baidu.com';
+            ['Google','Bing','Baidu'].forEach(name => {
+              const el = document.getElementById('btn'+name);
+              if(el) { el.style.background = '#1e293b'; el.style.color = '#fff'; }
+            });
+            if(eng === 'google') { frame.src = 'https://www.google.com/search?igu=1'; document.getElementById('btnGoogle').style.background = '#38bdf8'; document.getElementById('btnGoogle').style.color = '#0f172a'; }
+            else if(eng === 'bing') { frame.src = 'https://www.bing.com'; document.getElementById('btnBing').style.background = '#38bdf8'; document.getElementById('btnBing').style.color = '#0f172a'; }
+            else if(eng === 'baidu') { frame.src = 'https://m.baidu.com'; document.getElementById('btnBaidu').style.background = '#38bdf8'; document.getElementById('btnBaidu').style.color = '#0f172a'; }
           }
         
   </script>
