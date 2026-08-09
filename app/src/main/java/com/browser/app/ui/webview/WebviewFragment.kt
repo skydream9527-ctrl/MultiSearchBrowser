@@ -59,7 +59,7 @@ class WebviewFragment : Fragment() {
             builtInZoomControls = true
             displayZoomControls = false
             cacheMode = WebSettings.LOAD_DEFAULT
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         }
 
         binding.webview.webViewClient = object : WebViewClient() {
