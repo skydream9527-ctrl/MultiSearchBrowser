@@ -2,9 +2,15 @@ package com.browser.app.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PreferenceManager(context: Context) {
-    private val prefs: SharedPreferences = 
+@Singleton
+class PreferenceManager @Inject constructor(
+    @ApplicationContext context: Context
+) {
+    private val prefs: SharedPreferences =
         context.getSharedPreferences("browser_prefs", Context.MODE_PRIVATE)
 
     var selectedSearchEngine: String

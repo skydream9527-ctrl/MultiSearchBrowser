@@ -8,21 +8,23 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.browser.app.BrowserApplication
-import com.browser.app.data.BrowserDatabase
 import com.browser.app.databinding.FragmentWebviewBinding
-import com.browser.app.repository.BookmarkRepository
-import com.browser.app.repository.HistoryRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class WebviewFragment : Fragment() {
     private var _binding: FragmentWebviewBinding? = null
     private val binding get() = _binding!!
-    private lateinit var historyRepository: HistoryRepository
-    private lateinit var bookmarkRepository: BookmarkRepository
+    private val viewModel: WebviewViewModel by viewModels()
+
     private var currentUrl: String = ""
     private var currentTitle: String = ""
     private var isBookmarked = false
@@ -38,16 +40,12 @@ class WebviewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        historyRepository = HistoryRepository(db.historyDao())
-        bookmarkRepository = BookmarkRepository(db.bookmarkDao())
-
-        val url = arguments?.getString("url") ?: ""
-        currentUrl = url
+        currentUrl = WebviewFragmentArgs.fromBundle(requireArguments()).url
 
         setupWebview()
         setupToolbar()
-        loadUrl(url)
+        observeBookmarkState()
+        loadUrl(currentUrl)
     }
 
     private fun setupWebview() {
@@ -70,10 +68,7 @@ class WebviewFragment : Fragment() {
                 binding.urlBar.setText(url)
                 binding.progressBar.visibility = View.GONE
                 binding.swipeRefresh.isRefreshing = false
-
-                view?.let {
-                    historyRepository.addHistory(currentTitle, currentUrl)
-                }
+                viewModel.onPageFinished(currentTitle, currentUrl)
             }
         }
 
@@ -86,9 +81,7 @@ class WebviewFragment : Fragment() {
             }
         }
 
-        binding.swipeRefresh.setOnRefreshListener {
-            binding.webview.reload()
-        }
+        binding.swipeRefresh.setOnRefreshListener { binding.webview.reload() }
     }
 
     private fun setupToolbar() {
@@ -117,18 +110,17 @@ class WebviewFragment : Fragment() {
             }
         }
 
-        binding.btnRefresh.setOnClickListener {
-            binding.webview.reload()
-        }
+        binding.btnRefresh.setOnClickListener { binding.webview.reload() }
+        binding.btnBookmark.setOnClickListener { toggleBookmark() }
+    }
 
-        binding.btnBookmark.setOnClickListener {
-            toggleBookmark()
-        }
-
-        lifecycleScope.launch {
-            bookmarkRepository.isBookmarked(currentUrl).collect { bookmarked ->
-                isBookmarked = bookmarked
-                updateBookmarkIcon()
+    private fun observeBookmarkState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isBookmarked(currentUrl).collect { bookmarked ->
+                    isBookmarked = bookmarked
+                    updateBookmarkIcon()
+                }
             }
         }
     }
@@ -140,12 +132,11 @@ class WebviewFragment : Fragment() {
     }
 
     private fun toggleBookmark() {
-        lifecycleScope.launch {
-            val added = bookmarkRepository.toggleBookmark(currentTitle, currentUrl)
+        viewModel.toggleBookmark(currentTitle, currentUrl) { added ->
             isBookmarked = added
             updateBookmarkIcon()
             val message = if (added) "已添加收藏" else "已取消收藏"
-            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
         }
     }
 

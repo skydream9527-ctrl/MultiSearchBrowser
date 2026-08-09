@@ -3,8 +3,11 @@ package com.browser.app.repository
 import com.browser.app.data.dao.BookmarkDao
 import com.browser.app.data.entity.BookmarkEntity
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BookmarkRepository(private val bookmarkDao: BookmarkDao) {
+@Singleton
+class BookmarkRepository @Inject constructor(private val bookmarkDao: BookmarkDao) {
     fun getAllBookmarks(): Flow<List<BookmarkEntity>> = bookmarkDao.getAllBookmarks()
 
     fun isBookmarked(url: String): Flow<Boolean> = bookmarkDao.isBookmarked(url)

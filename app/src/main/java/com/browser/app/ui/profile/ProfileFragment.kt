@@ -15,23 +15,23 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.browser.app.R
 import com.browser.app.databinding.FragmentProfileBinding
-import com.browser.app.utils.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
-    private lateinit var preferenceManager: PreferenceManager
+    private val viewModel: ProfileViewModel by viewModels()
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                handleSelectedImage(uri)
-            }
+            result.data?.data?.let { uri -> handleSelectedImage(uri) }
         }
     }
 
@@ -56,13 +56,12 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        preferenceManager = PreferenceManager(requireContext())
         loadAvatar()
         setupClickListeners()
     }
 
     private fun loadAvatar() {
-        preferenceManager.avatarUri?.let { uriString ->
+        viewModel.avatarUriString()?.let { uriString ->
             try {
                 val uri = Uri.parse(uriString)
                 binding.avatarImage.setImageURI(uri)
@@ -73,44 +72,28 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        binding.uploadAvatarBtn.setOnClickListener {
-            checkPermissionAndPickImage()
-        }
-
-        binding.avatarImage.setOnClickListener {
-            checkPermissionAndPickImage()
-        }
-
+        binding.uploadAvatarBtn.setOnClickListener { checkPermissionAndPickImage() }
+        binding.avatarImage.setOnClickListener { checkPermissionAndPickImage() }
         binding.historySection.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_historyFragment)
         }
-
         binding.bookmarksSection.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_bookmarksFragment)
         }
     }
 
     private fun checkPermissionAndPickImage() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.READ_MEDIA_IMAGES
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                openImagePicker()
-            } else {
-                requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
-            }
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
         } else {
-            if (ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                openImagePicker()
-            } else {
-                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+        if (ContextCompat.checkSelfPermission(requireContext(), permission) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            openImagePicker()
+        } else {
+            requestPermissionLauncher.launch(permission)
         }
     }
 
@@ -127,10 +110,9 @@ class ProfileFragment : Fragment() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         } catch (e: Exception) {
-            // Ignore
+            // 忽略：部分 Provider 不允许持久化授权
         }
-
-        preferenceManager.avatarUri = uri.toString()
+        viewModel.saveAvatarUri(uri.toString())
         binding.avatarImage.setImageURI(uri)
         Toast.makeText(requireContext(), R.string.avatar_uploaded, Toast.LENGTH_SHORT).show()
     }

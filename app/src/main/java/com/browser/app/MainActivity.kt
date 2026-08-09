@@ -1,14 +1,12 @@
 package com.browser.app
 
 import android.os.Bundle
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import com.browser.app.databinding.ActivityMainBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
@@ -16,7 +14,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         setupBottomNavigation()
     }
 
@@ -25,21 +22,16 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
 
         binding.tabHome.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.homeFragment)
+            navController.navigate(R.id.homeFragment)
             updateTabSelection(0)
         }
-
         binding.tabWindows.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.windowsFragment)
+            navController.navigate(R.id.windowsFragment)
             updateTabSelection(1)
         }
-
-        binding.tabBack.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
+        binding.tabBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.tabProfile.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.profileFragment)
+            navController.navigate(R.id.profileFragment)
             updateTabSelection(3)
         }
     }
@@ -51,12 +43,11 @@ class MainActivity : AppCompatActivity() {
             Triple(binding.tabBackIcon, binding.tabBackText, binding.tabBack),
             Triple(binding.tabProfileIcon, binding.tabProfileText, binding.tabProfile)
         )
-
         tabs.forEachIndexed { index, (icon, text, _) ->
             val color = if (index == selectedIndex) {
-                getColor(com.browser.app.R.color.primary)
+                getColor(R.color.primary)
             } else {
-                getColor(com.browser.app.R.color.gray)
+                getColor(R.color.gray)
             }
             icon.setColorFilter(color)
             text.setTextColor(color)

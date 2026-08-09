@@ -6,22 +6,26 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.browser.app.R
-import com.browser.app.data.BrowserDatabase
 import com.browser.app.data.entity.BookmarkEntity
 import com.browser.app.databinding.FragmentBookmarksBinding
 import com.browser.app.databinding.ItemBookmarkBinding
-import com.browser.app.repository.BookmarkRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class BookmarksFragment : Fragment() {
     private var _binding: FragmentBookmarksBinding? = null
     private val binding get() = _binding!!
-    private lateinit var bookmarkRepository: BookmarkRepository
+    private val viewModel: BookmarksViewModel by viewModels()
     private lateinit var adapter: BookmarkAdapter
 
     override fun onCreateView(
@@ -35,9 +39,6 @@ class BookmarksFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        bookmarkRepository = BookmarkRepository(db.bookmarkDao())
-
         setupRecyclerView()
         observeBookmarks()
     }
@@ -45,23 +46,24 @@ class BookmarksFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = BookmarkAdapter(
             onItemClick = { bookmark ->
-                val action = com.browser.app.ui.home.HomeFragmentDirections
-                    .actionHomeFragmentToWebviewFragment(bookmark.url)
+                val action = BookmarksFragmentDirections
+                    .actionBookmarksFragmentToWebviewFragment(bookmark.url)
                 findNavController().navigate(action)
             },
-            onLongClick = { bookmark ->
-                showDeleteDialog(bookmark)
-            }
+            onLongClick = { bookmark -> showDeleteDialog(bookmark) }
         )
         binding.bookmarksList.layoutManager = LinearLayoutManager(requireContext())
         binding.bookmarksList.adapter = adapter
     }
 
     private fun observeBookmarks() {
-        lifecycleScope.launch {
-            bookmarkRepository.getAllBookmarks().collect { bookmarks ->
-                adapter.submitList(bookmarks)
-                binding.emptyText.visibility = if (bookmarks.isEmpty()) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.bookmarks.collect { bookmarks ->
+                    adapter.submitList(bookmarks)
+                    binding.emptyText.visibility =
+                        if (bookmarks.isEmpty()) View.VISIBLE else View.GONE
+                }
             }
         }
     }
@@ -70,11 +72,7 @@ class BookmarksFragment : Fragment() {
         AlertDialog.Builder(requireContext())
             .setTitle("删除收藏")
             .setMessage("确定要删除这个收藏吗？")
-            .setPositiveButton("删除") { _, _ ->
-                lifecycleScope.launch {
-                    bookmarkRepository.removeBookmark(bookmark.url)
-                }
-            }
+            .setPositiveButton("删除") { _, _ -> viewModel.removeBookmark(bookmark.url) }
             .setNegativeButton("取消", null)
             .show()
     }
@@ -88,14 +86,7 @@ class BookmarksFragment : Fragment() {
 class BookmarkAdapter(
     private val onItemClick: (BookmarkEntity) -> Unit,
     private val onLongClick: (BookmarkEntity) -> Unit
-) : RecyclerView.Adapter<BookmarkAdapter.ViewHolder>() {
-
-    private var items: List<BookmarkEntity> = emptyList()
-
-    fun submitList(newItems: List<BookmarkEntity>) {
-        items = newItems
-        notifyDataSetChanged()
-    }
+) : ListAdapter<BookmarkEntity, BookmarkAdapter.ViewHolder>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemBookmarkBinding.inflate(
@@ -107,10 +98,8 @@ class BookmarkAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount() = items.size
 
     inner class ViewHolder(private val binding: ItemBookmarkBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -123,6 +112,16 @@ class BookmarkAdapter(
                 onLongClick(bookmark)
                 true
             }
+        }
+    }
+
+    companion object {
+        private val DIFF = object : DiffUtil.ItemCallback<BookmarkEntity>() {
+            override fun areItemsTheSame(oldItem: BookmarkEntity, newItem: BookmarkEntity): Boolean =
+                oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: BookmarkEntity, newItem: BookmarkEntity): Boolean =
+                oldItem == newItem
         }
     }
 }

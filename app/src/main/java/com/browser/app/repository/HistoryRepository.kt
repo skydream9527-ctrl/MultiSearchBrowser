@@ -3,8 +3,11 @@ package com.browser.app.repository
 import com.browser.app.data.dao.HistoryDao
 import com.browser.app.data.entity.HistoryEntity
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class HistoryRepository(private val historyDao: HistoryDao) {
+@Singleton
+class HistoryRepository @Inject constructor(private val historyDao: HistoryDao) {
     fun getAllHistory(): Flow<List<HistoryEntity>> = historyDao.getAllHistory()
 
     suspend fun addHistory(title: String, url: String) {

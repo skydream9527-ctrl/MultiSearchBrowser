@@ -16,7 +16,11 @@
     <fragment
         android:id="@+id/windowsFragment"
         android:name="com.browser.app.ui.tabs.WindowsFragment"
-        android:label="多窗口" />
+        android:label="多窗口">
+        <action
+            android:id="@+id/action_windowsFragment_to_webviewFragment"
+            app:destination="@id/webviewFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/profileFragment"
@@ -42,11 +46,19 @@
     <fragment
         android:id="@+id/historyFragment"
         android:name="com.browser.app.ui.profile.HistoryFragment"
-        android:label="浏览历史" />
+        android:label="浏览历史">
+        <action
+            android:id="@+id/action_historyFragment_to_webviewFragment"
+            app:destination="@id/webviewFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/bookmarksFragment"
         android:name="com.browser.app.ui.profile.BookmarksFragment"
-        android:label="收藏内容" />
+        android:label="收藏内容">
+        <action
+            android:id="@+id/action_bookmarksFragment_to_webviewFragment"
+            app:destination="@id/webviewFragment" />
+    </fragment>
 
 </navigation>
