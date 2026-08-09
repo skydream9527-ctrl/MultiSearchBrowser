@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#FF5722</color>
+    <color name="background">#FAFAFA</color>
+    <color name="baidu_blue">#2932E1</color>
+    <color name="bilibili_pink">#FB7299</color>
+    <color name="bing_teal">#008373</color>
+    <color name="black">#000000</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="doubao_green">#00D4AA</color>
+    <color name="douyin_black">#161823</color>
+    <color name="gray">#9E9E9E</color>
+    <color name="gray_dark">#616161</color>
+    <color name="gray_light">#F5F5F5</color>
+    <color name="primary">#2196F3</color>
+    <color name="primary_dark">#1976D2</color>
+    <color name="qianwen_blue">#6B5CE7</color>
+    <color name="search_bar_bg">#F0F0F0</color>
+    <color name="sogou_orange">#FF6600</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="white">#FFFFFF</color>
+    <string name="add_bookmark">添加收藏</string>
+    <string name="app_name">搜索浏览器</string>
+    <string name="avatar_title">上传头像</string>
+    <string name="avatar_uploaded">头像上传成功</string>
+    <string name="bookmarks_title">收藏内容</string>
+    <string name="clear_history">清空历史</string>
+    <string name="close_window">关闭窗口</string>
+    <string name="error_loading">加载失败</string>
+    <string name="history_title">浏览历史</string>
+    <string name="loading">加载中...</string>
+    <string name="new_window">新建窗口</string>
+    <string name="no_bookmarks">暂无收藏内容</string>
+    <string name="no_history">暂无浏览历史</string>
+    <string name="remove_bookmark">取消收藏</string>
+    <string name="search_engine_baidu">百度</string>
+    <string name="search_engine_bilibili">B站</string>
+    <string name="search_engine_bing">必应</string>
+    <string name="search_engine_doubao">豆包</string>
+    <string name="search_engine_douyin">抖音</string>
+    <string name="search_engine_qianwen">千问</string>
+    <string name="search_engine_sogou">搜狗</string>
+    <string name="search_hint">输入搜索内容</string>
+    <string name="select_avatar">选择头像</string>
+    <string name="tab_back">返回</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_profile">我的</string>
+    <string name="tab_windows">多窗口</string>
+    <string name="webview_download_failed">下载失败</string>
+    <string name="webview_download_started">开始下载</string>
+    <string name="webview_error_http">服务器错误 (%1$d)</string>
+    <string name="webview_error_network">网络连接失败，请检查网络设置</string>
+    <string name="webview_error_title">无法打开网页</string>
+    <string name="webview_filechooser_failed">无法选择文件</string>
+    <string name="webview_no_app_to_open">没有可处理此链接的应用</string>
+    <string name="webview_open_external">使用其他应用打开</string>
+    <string name="webview_retry">重试</string>
+    <string name="webview_ua_desktop">桌面版</string>
+    <string name="webview_ua_mobile">移动版</string>
+    <string name="webview_ua_switched">已切换至%1$s</string>
+    <style name="BottomTabText" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/gray</item>
+    </style>
+    <style name="SearchEngineChip" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/white</item>
+        <item name="chipStrokeColor">@color/gray</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="chipCornerRadius">20dp</item>
+    </style>
+    <style name="Theme.MultiSearchBrowser" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+</resources>

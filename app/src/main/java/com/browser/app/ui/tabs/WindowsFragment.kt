@@ -42,7 +42,7 @@ class WindowsFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = WindowAdapter(
-            onItemClick = { window -> navigateToWebview(window.url) },
+            onItemClick = { window -> navigateToWebview(window.url, window.id) },
             onCloseClick = { window -> viewModel.deleteWindow(window) }
         )
         binding.windowsList.layoutManager = LinearLayoutManager(requireContext())
@@ -69,11 +69,11 @@ class WindowsFragment : Fragment() {
     }
 
     private fun setupAddButton() {
-        binding.addWindowBtn.setOnClickListener { navigateToWebview("https://www.baidu.com") }
+        binding.addWindowBtn.setOnClickListener { navigateToWebview("https://www.baidu.com", 0L) }
     }
 
-    private fun navigateToWebview(url: String) {
-        val action = WindowsFragmentDirections.actionWindowsFragmentToWebviewFragment(url)
+    private fun navigateToWebview(url: String, windowId: Long) {
+        val action = WindowsFragmentDirections.actionWindowsFragmentToWebviewFragment(url, windowId)
         findNavController().navigate(action)
     }
 

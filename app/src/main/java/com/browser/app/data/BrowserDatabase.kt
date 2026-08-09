@@ -15,8 +15,8 @@ import com.browser.app.data.entity.WindowEntity
         BookmarkEntity::class,
         WindowEntity::class
     ],
-    version = 1,
-    exportSchema = false
+    version = 2,
+    exportSchema = true
 )
 abstract class BrowserDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao

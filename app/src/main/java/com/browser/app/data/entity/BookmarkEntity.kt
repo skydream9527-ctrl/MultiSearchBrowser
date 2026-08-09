@@ -9,5 +9,7 @@ data class BookmarkEntity(
     val id: Long = 0,
     val title: String,
     val url: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    /** 站点图标 URL，v2 新增；旧数据为 null */
+    val faviconUrl: String? = null
 )

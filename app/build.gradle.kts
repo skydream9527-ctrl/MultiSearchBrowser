@@ -47,6 +47,12 @@ android {
     }
 }
 
+// Room schema 导出：编译时把每个版本的 schema JSON 写到 app/schemas/，
+// 用于版本对比、自动生成 Migration 校验和回归测试
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")

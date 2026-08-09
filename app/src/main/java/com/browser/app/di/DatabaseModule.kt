@@ -24,7 +24,12 @@ object DatabaseModule {
             context.applicationContext,
             BrowserDatabase::class.java,
             "browser_database"
-        ).build()
+        )
+            // 显式注册迁移：升级时按 Migration 增量迁移用户数据
+            .addMigrations(*DatabaseMigrations.ALL)
+            // 仅在「降级」（开发期切回旧分支）时允许破坏性重建，避免崩溃
+            .fallbackToDestructiveMigrationOnDowngrade()
+            .build()
     }
 
     @Provides

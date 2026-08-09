@@ -27,4 +27,16 @@
     <string name="search_engine_bing">必应</string>
     <string name="search_engine_doubao">豆包</string>
     <string name="search_engine_qianwen">千问</string>
+    <string name="webview_error_title">无法打开网页</string>
+    <string name="webview_error_network">网络连接失败，请检查网络设置</string>
+    <string name="webview_error_http">服务器错误 (%1$d)</string>
+    <string name="webview_retry">重试</string>
+    <string name="webview_open_external">使用其他应用打开</string>
+    <string name="webview_no_app_to_open">没有可处理此链接的应用</string>
+    <string name="webview_ua_mobile">移动版</string>
+    <string name="webview_ua_desktop">桌面版</string>
+    <string name="webview_ua_switched">已切换至%1$s</string>
+    <string name="webview_download_started">开始下载</string>
+    <string name="webview_download_failed">下载失败</string>
+    <string name="webview_filechooser_failed">无法选择文件</string>
 </resources>
