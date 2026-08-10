@@ -1,154 +1,146 @@
 [
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_windows.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_windows.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_bookmark_outline.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_bookmark_outline.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_item_quick_link.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_quick_link.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_web.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_web.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_avatar_placeholder.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_avatar_placeholder.xml"
+        "merged": "com.browser.app-debug-54:/layout_activity_main.xml.flat",
+        "source": "com.browser.app-main-56:/layout/activity_main.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/mipmap-hdpi_ic_launcher.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/mipmap-hdpi/ic_launcher.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_profile.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_profile.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_profile.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_profile.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_search.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_search.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_history.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_history.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_back.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_back.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/navigation_nav_graph.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/navigation/nav_graph.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_settings.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_settings.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_bookmarks.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_bookmarks.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_windows.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_windows.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_history.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_history.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_profile.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_profile.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_close.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_close.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_add.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_add.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_arrow_left.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_arrow_left.xml"
+        "merged": "com.browser.app-debug-54:/layout_item_history.xml.flat",
+        "source": "com.browser.app-main-56:/layout/item_history.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_activity_main.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/activity_main.xml"
+        "merged": "com.browser.app-debug-54:/navigation_nav_graph.xml.flat",
+        "source": "com.browser.app-main-56:/navigation/nav_graph.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_search_bar_bg.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/search_bar_bg.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_history.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_history.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_profile.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_profile.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_arrow_right.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_arrow_right.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_windows.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_windows.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_home.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_home.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_back.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_back.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_arrow_right.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_arrow_right.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_card_bg.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/card_bg.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_bookmarks.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_bookmarks.xml"
     },
     {
         "merged": "com.browser.app-debug-54:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
         "source": "com.browser.app-main-56:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/mipmap-hdpi_ic_launcher_round.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/mipmap-hdpi/ic_launcher_round.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_close.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_close.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_search_button_bg.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/search_button_bg.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_home.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_home.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_home.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_home.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_bookmark.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_bookmark.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_item_window.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_window.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_circle_avatar_bg.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/circle_avatar_bg.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_add.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_add.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_item_bookmark.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_bookmark.xml"
-    },
-    {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_item_history.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_history.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_avatar_placeholder.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_avatar_placeholder.xml"
     },
     {
         "merged": "com.browser.app-debug-54:/mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "com.browser.app-main-56:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_web.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_web.xml"
+        "merged": "com.browser.app-debug-54:/drawable_card_bg.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/card_bg.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_launcher_foreground.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_webview.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_webview.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_circle_button_bg.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/circle_button_bg.xml"
+        "merged": "com.browser.app-debug-54:/drawable_search_button_bg.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/search_button_bg.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_refresh.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_refresh.xml"
+        "merged": "com.browser.app-debug-54:/layout_item_quick_link.xml.flat",
+        "source": "com.browser.app-main-56:/layout/item_quick_link.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_bookmark_outline.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_bookmark_outline.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_windows.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_windows.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_webview.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_webview.xml"
+        "merged": "com.browser.app-debug-54:/layout_item_bookmark.xml.flat",
+        "source": "com.browser.app-main-56:/layout/item_bookmark.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_bookmark.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_bookmark.xml"
+        "merged": "com.browser.app-debug-54:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/layout_fragment_home.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_home.xml"
+        "merged": "com.browser.app-debug-54:/layout_fragment_history.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_history.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_settings.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_settings.xml"
+        "merged": "com.browser.app-debug-54:/drawable_circle_avatar_bg.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/circle_avatar_bg.xml"
     },
     {
-        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-debug-54:/drawable_ic_search.xml.flat",
-        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/drawable/ic_search.xml"
+        "merged": "com.browser.app-debug-54:/layout_item_window.xml.flat",
+        "source": "com.browser.app-main-56:/layout/item_window.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/drawable_search_bar_bg.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/search_bar_bg.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/drawable_circle_button_bg.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/circle_button_bg.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/drawable_ic_refresh.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_refresh.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/drawable_ic_arrow_left.xml.flat",
+        "source": "com.browser.app-main-56:/drawable/ic_arrow_left.xml"
     }
 ]

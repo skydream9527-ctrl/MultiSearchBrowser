@@ -12,12 +12,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.RecyclerView
+import com.browser.app.R
 import com.browser.app.data.entity.BookmarkEntity
 import com.browser.app.databinding.FragmentBookmarksBinding
-import com.browser.app.databinding.ItemBookmarkBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -70,58 +67,15 @@ class BookmarksFragment : Fragment() {
 
     private fun showDeleteDialog(bookmark: BookmarkEntity) {
         AlertDialog.Builder(requireContext())
-            .setTitle("删除收藏")
-            .setMessage("确定要删除这个收藏吗？")
-            .setPositiveButton("删除") { _, _ -> viewModel.removeBookmark(bookmark.url) }
-            .setNegativeButton("取消", null)
+            .setTitle(R.string.dialog_delete_bookmark_title)
+            .setMessage(R.string.dialog_delete_bookmark_message)
+            .setPositiveButton(R.string.dialog_delete) { _, _ -> viewModel.removeBookmark(bookmark.url) }
+            .setNegativeButton(R.string.dialog_cancel, null)
             .show()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-}
-
-class BookmarkAdapter(
-    private val onItemClick: (BookmarkEntity) -> Unit,
-    private val onLongClick: (BookmarkEntity) -> Unit
-) : ListAdapter<BookmarkEntity, BookmarkAdapter.ViewHolder>(DIFF) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemBookmarkBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return ViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
-    }
-
-    inner class ViewHolder(private val binding: ItemBookmarkBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-
-        fun bind(bookmark: BookmarkEntity) {
-            binding.title.text = bookmark.title.ifEmpty { "无标题" }
-            binding.url.text = bookmark.url
-            binding.root.setOnClickListener { onItemClick(bookmark) }
-            binding.root.setOnLongClickListener {
-                onLongClick(bookmark)
-                true
-            }
-        }
-    }
-
-    companion object {
-        private val DIFF = object : DiffUtil.ItemCallback<BookmarkEntity>() {
-            override fun areItemsTheSame(oldItem: BookmarkEntity, newItem: BookmarkEntity): Boolean =
-                oldItem.id == newItem.id
-
-            override fun areContentsTheSame(oldItem: BookmarkEntity, newItem: BookmarkEntity): Boolean =
-                oldItem == newItem
-        }
     }
 }

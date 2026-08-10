@@ -41,7 +41,7 @@ class ProfileFragment : Fragment() {
         if (isGranted) {
             openImagePicker()
         } else {
-            Toast.makeText(requireContext(), "需要存储权限才能上传头像", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.permission_storage_required, Toast.LENGTH_SHORT).show()
         }
     }
 

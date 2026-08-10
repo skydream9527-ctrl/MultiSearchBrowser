@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.browser.app.data.dao.WindowDaoTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:29.559Z" hostname="all-in-one-5-vci-xqvr6" time="0.43">
+  <properties/>
+  <testcase name="getById_returns_window_when_exists" classname="com.browser.app.data.dao.WindowDaoTest" time="0.061"/>
+  <testcase name="getById_returns_null_when_not_exists" classname="com.browser.app.data.dao.WindowDaoTest" time="0.044"/>
+  <testcase name="getCount_emits_zero_initially_then_reflects_inserts" classname="com.browser.app.data.dao.WindowDaoTest" time="0.074"/>
+  <testcase name="update_overrides_existing_fields" classname="com.browser.app.data.dao.WindowDaoTest" time="0.07"/>
+  <testcase name="delete_entity_removes_row" classname="com.browser.app.data.dao.WindowDaoTest" time="0.035"/>
+  <testcase name="getAllWindows_returns_all_inserted_ordered_by_timestamp_desc" classname="com.browser.app.data.dao.WindowDaoTest" time="0.054"/>
+  <testcase name="insert_returns_generated_id" classname="com.browser.app.data.dao.WindowDaoTest" time="0.041"/>
+  <testcase name="deleteById_removes_only_target" classname="com.browser.app.data.dao.WindowDaoTest" time="0.049"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

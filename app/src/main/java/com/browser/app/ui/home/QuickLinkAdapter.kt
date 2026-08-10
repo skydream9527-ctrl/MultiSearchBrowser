@@ -32,7 +32,7 @@ class QuickLinkAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(engine: SearchEngine) {
-            binding.name.text = engine.name
+            binding.name.text = binding.root.context.getString(engine.nameResId)
             binding.root.setOnClickListener { onItemClick(engine) }
         }
     }

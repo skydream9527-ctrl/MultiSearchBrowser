@@ -278,8 +278,8 @@ class WebviewFragment : Fragment() {
         viewModel.toggleBookmark(currentTitle, currentUrl) { added ->
             isBookmarked = added
             updateBookmarkIcon()
-            val message = if (added) "已添加收藏" else "已取消收藏"
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            val msgRes = if (added) R.string.bookmark_added else R.string.bookmark_removed
+            Toast.makeText(requireContext(), msgRes, Toast.LENGTH_SHORT).show()
         }
     }
 

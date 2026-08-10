@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import com.browser.app.R
 import com.browser.app.databinding.FragmentHomeBinding
 import com.browser.app.utils.SearchEngine
 import com.google.android.material.chip.Chip
@@ -50,7 +51,7 @@ class HomeFragment : Fragment() {
     private fun setupSearchEngines() {
         SearchEngine.ALL.forEach { engine ->
             val chip = Chip(requireContext()).apply {
-                text = engine.name
+                text = getString(engine.nameResId)
                 isCheckable = true
                 tag = engine.id
                 setChipBackgroundColorResource(com.browser.app.R.color.white)
@@ -102,7 +103,7 @@ class HomeFragment : Fragment() {
         if (url != null) {
             navigateToWebview(url)
         } else {
-            Toast.makeText(requireContext(), "请输入搜索内容", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.search_empty_input, Toast.LENGTH_SHORT).show()
         }
     }
 

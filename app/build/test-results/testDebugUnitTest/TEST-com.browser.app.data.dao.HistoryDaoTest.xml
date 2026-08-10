@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.browser.app.data.dao.HistoryDaoTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:29.073Z" hostname="all-in-one-5-vci-xqvr6" time="0.473">
+  <properties/>
+  <testcase name="insert_then_getAllHistory_returns_item" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.049"/>
+  <testcase name="delete_removes_only_target_entity" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.051"/>
+  <testcase name="dao_does_not_dedupe_same_url_at_dao_layer" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.045"/>
+  <testcase name="getCount_emits_zero_initially_then_reflects_inserts" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.075"/>
+  <testcase name="getByUrl_returns_entity_when_exists" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.037"/>
+  <testcase name="getByUrl_returns_null_when_not_exists" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.046"/>
+  <testcase name="getAllHistory_orders_by_timestamp_desc" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.063"/>
+  <testcase name="deleteAll_clears_entire_table" classname="com.browser.app.data.dao.HistoryDaoTest" time="0.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

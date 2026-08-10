@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">搜索浏览器</string>
     <string name="search_hint">输入搜索内容</string>
+    <string name="cd_search">搜索</string>
     <string name="tab_home">首页</string>
     <string name="tab_windows">多窗口</string>
     <string name="tab_back">返回</string>
@@ -39,4 +40,34 @@
     <string name="webview_download_started">开始下载</string>
     <string name="webview_download_failed">下载失败</string>
     <string name="webview_filechooser_failed">无法选择文件</string>
+
+    <!-- 首页 -->
+    <string name="home_select_engine">选择搜索引擎</string>
+    <string name="home_quick_links">快捷入口</string>
+    <string name="search_empty_input">请输入搜索内容</string>
+
+    <!-- WebView 收藏 -->
+    <string name="bookmark_added">已添加收藏</string>
+    <string name="bookmark_removed">已取消收藏</string>
+
+    <!-- 权限 -->
+    <string name="permission_storage_required">需要存储权限才能上传头像</string>
+
+    <!-- 列表项占位文案 -->
+    <string name="text_no_title">无标题</string>
+
+    <!-- 多窗口 -->
+    <string name="window_count">%1$d 个窗口</string>
+    <string name="empty_windows">暂无窗口\n点击右上角添加新窗口</string>
+
+    <!-- 我的页 -->
+    <string name="profile_settings">设置</string>
+
+    <!-- 通用对话框 -->
+    <string name="dialog_delete_history_title">删除记录</string>
+    <string name="dialog_delete_history_message">确定要删除这条记录吗？</string>
+    <string name="dialog_delete_bookmark_title">删除收藏</string>
+    <string name="dialog_delete_bookmark_message">确定要删除这个收藏吗？</string>
+    <string name="dialog_delete">删除</string>
+    <string name="dialog_cancel">取消</string>
 </resources>

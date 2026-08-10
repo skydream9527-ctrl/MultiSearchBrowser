@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.browser.app.repository.WindowRepositoryTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:30.712Z" hostname="all-in-one-5-vci-xqvr6" time="0.326">
+  <properties/>
+  <testcase name="getWindowById_returns_null_when_not_exists" classname="com.browser.app.repository.WindowRepositoryTest" time="0.029"/>
+  <testcase name="getAllWindows_returns_all_inserted" classname="com.browser.app.repository.WindowRepositoryTest" time="0.035"/>
+  <testcase name="deleteWindow_entity_removes_row" classname="com.browser.app.repository.WindowRepositoryTest" time="0.033"/>
+  <testcase name="updateWindow_overrides_existing_fields" classname="com.browser.app.repository.WindowRepositoryTest" time="0.053"/>
+  <testcase name="addWindow_returns_generated_id_and_persists_entity" classname="com.browser.app.repository.WindowRepositoryTest" time="0.027"/>
+  <testcase name="deleteWindow_with_unsaved_entity_is_no_op" classname="com.browser.app.repository.WindowRepositoryTest" time="0.061"/>
+  <testcase name="deleteWindowById_removes_target_only" classname="com.browser.app.repository.WindowRepositoryTest" time="0.044"/>
+  <testcase name="getCount_reflects_inserts_and_deletes" classname="com.browser.app.repository.WindowRepositoryTest" time="0.044"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

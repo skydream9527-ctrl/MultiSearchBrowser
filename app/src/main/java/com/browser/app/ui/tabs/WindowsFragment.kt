@@ -11,9 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.browser.app.data.entity.WindowEntity
+import com.browser.app.R
 import com.browser.app.databinding.FragmentWindowsBinding
-import com.browser.app.databinding.ItemWindowBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -62,7 +61,7 @@ class WindowsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.count.collect { count ->
-                    binding.windowCount.text = "$count 个窗口"
+                    binding.windowCount.text = getString(R.string.window_count, count)
                 }
             }
         }
@@ -80,45 +79,5 @@ class WindowsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-}
-
-class WindowAdapter(
-    private val onItemClick: (WindowEntity) -> Unit,
-    private val onCloseClick: (WindowEntity) -> Unit
-) : androidx.recyclerview.widget.ListAdapter<WindowEntity, WindowAdapter.ViewHolder>(DIFF) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemWindowBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return ViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
-    }
-
-    inner class ViewHolder(private val binding: ItemWindowBinding) :
-        androidx.recyclerview.widget.RecyclerView.ViewHolder(binding.root) {
-
-        fun bind(window: WindowEntity) {
-            binding.title.text = window.title.ifEmpty { "无标题" }
-            binding.url.text = window.url
-            binding.root.setOnClickListener { onItemClick(window) }
-            binding.closeBtn.setOnClickListener { onCloseClick(window) }
-        }
-    }
-
-    companion object {
-        private val DIFF = object : androidx.recyclerview.widget.DiffUtil.ItemCallback<WindowEntity>() {
-            override fun areItemsTheSame(oldItem: WindowEntity, newItem: WindowEntity): Boolean =
-                oldItem.id == newItem.id
-
-            override fun areContentsTheSame(oldItem: WindowEntity, newItem: WindowEntity): Boolean =
-                oldItem == newItem
-        }
     }
 }

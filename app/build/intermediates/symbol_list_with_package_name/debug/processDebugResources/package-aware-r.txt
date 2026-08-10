@@ -3996,6 +3996,8 @@ string app_name
 string appbar_scrolling_view_behavior
 string avatar_title
 string avatar_uploaded
+string bookmark_added
+string bookmark_removed
 string bookmarks_title
 string bottom_sheet_behavior
 string bottomsheet_action_collapse
@@ -4010,6 +4012,7 @@ string call_notification_hang_up_action
 string call_notification_incoming_text
 string call_notification_ongoing_text
 string call_notification_screening_text
+string cd_search
 string character_counter_content_description
 string character_counter_overflowed_content_description
 string character_counter_pattern
@@ -4017,6 +4020,13 @@ string clear_history
 string clear_text_end_icon_content_description
 string close_window
 string dest_title
+string dialog_cancel
+string dialog_delete
+string dialog_delete_bookmark_message
+string dialog_delete_bookmark_title
+string dialog_delete_history_message
+string dialog_delete_history_title
+string empty_windows
 string error_a11y_label
 string error_icon_content_description
 string error_loading
@@ -4025,6 +4035,8 @@ string fab_transformation_scrim_behavior
 string fab_transformation_sheet_behavior
 string hide_bottom_view_on_scroll_behavior
 string history_title
+string home_quick_links
+string home_select_engine
 string icon_content_description
 string item_view_role_description
 string loading
@@ -4138,7 +4150,10 @@ string path_password_eye
 string path_password_eye_mask_strike_through
 string path_password_eye_mask_visible
 string path_password_strike_through
+string permission_storage_required
+string profile_settings
 string remove_bookmark
+string search_empty_input
 string search_engine_baidu
 string search_engine_bilibili
 string search_engine_bing
@@ -4159,6 +4174,7 @@ string tab_back
 string tab_home
 string tab_profile
 string tab_windows
+string text_no_title
 string webview_download_failed
 string webview_download_started
 string webview_error_http
@@ -4171,6 +4187,7 @@ string webview_retry
 string webview_ua_desktop
 string webview_ua_mobile
 string webview_ua_switched
+string window_count
 style AlertDialog_AppCompat
 style AlertDialog_AppCompat_Light
 style Animation_AppCompat_Dialog

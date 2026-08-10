@@ -442,35 +442,35 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
+      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
 
       static String com_browser_app_ui_profile_BookmarksViewModel = "com.browser.app.ui.profile.BookmarksViewModel";
 
-      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
-
-      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
+      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
 
       static String com_browser_app_ui_home_HomeViewModel = "com.browser.app.ui.home.HomeViewModel";
 
       static String com_browser_app_ui_profile_ProfileViewModel = "com.browser.app.ui.profile.ProfileViewModel";
 
+      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
+
       @KeepFieldType
-      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
+      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
 
       @KeepFieldType
       BookmarksViewModel com_browser_app_ui_profile_BookmarksViewModel2;
 
       @KeepFieldType
-      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
-
-      @KeepFieldType
-      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
+      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
 
       @KeepFieldType
       HomeViewModel com_browser_app_ui_home_HomeViewModel2;
 
       @KeepFieldType
       ProfileViewModel com_browser_app_ui_profile_ProfileViewModel2;
+
+      @KeepFieldType
+      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
     }
   }
 
@@ -526,23 +526,17 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
-
-      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
-
       static String com_browser_app_ui_profile_BookmarksViewModel = "com.browser.app.ui.profile.BookmarksViewModel";
 
       static String com_browser_app_ui_home_HomeViewModel = "com.browser.app.ui.home.HomeViewModel";
 
+      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
+
       static String com_browser_app_ui_profile_ProfileViewModel = "com.browser.app.ui.profile.ProfileViewModel";
 
+      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
+
       static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
-
-      @KeepFieldType
-      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
-
-      @KeepFieldType
-      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
 
       @KeepFieldType
       BookmarksViewModel com_browser_app_ui_profile_BookmarksViewModel2;
@@ -551,7 +545,13 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
       HomeViewModel com_browser_app_ui_home_HomeViewModel2;
 
       @KeepFieldType
+      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
+
+      @KeepFieldType
       ProfileViewModel com_browser_app_ui_profile_ProfileViewModel2;
+
+      @KeepFieldType
+      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
 
       @KeepFieldType
       WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;

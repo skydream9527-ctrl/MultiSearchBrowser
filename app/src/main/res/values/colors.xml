@@ -14,12 +14,13 @@
     <color name="background">#FAFAFA</color>
     <color name="card_background">#FFFFFF</color>
     <color name="search_bar_bg">#F0F0F0</color>
-    
+
+    <!-- 搜索引擎品牌色（与各平台官网一致） -->
     <color name="baidu_blue">#2932E1</color>
-    <color name="sogou_orange">#FF6600</color>
+    <color name="sogou_orange">#FF5C1A</color>
     <color name="bilibili_pink">#FB7299</color>
     <color name="douyin_black">#161823</color>
-    <color name="bing_teal">#008373</color>
-    <color name="doubao_green">#00D4AA</color>
-    <color name="qianwen_blue">#6B5CE7</color>
+    <color name="bing_teal">#007DFF</color>
+    <color name="doubao_green">#00C39B</color>
+    <color name="qianwen_blue">#615CED</color>
 </resources>
