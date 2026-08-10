@@ -80,6 +80,12 @@ class ProfileFragment : Fragment() {
         binding.bookmarksSection.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_bookmarksFragment)
         }
+        binding.downloadsSection.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_downloadsFragment)
+        }
+        binding.settingsSection.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_settingsFragment)
+        }
     }
 
     private fun checkPermissionAndPickImage() {

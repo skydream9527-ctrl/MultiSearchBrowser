@@ -32,7 +32,23 @@
         <action
             android:id="@+id/action_profileFragment_to_bookmarksFragment"
             app:destination="@id/bookmarksFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_downloadsFragment"
+            app:destination="@id/downloadsFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.browser.app.ui.settings.SettingsFragment"
+        android:label="设置" />
+
+    <fragment
+        android:id="@+id/downloadsFragment"
+        android:name="com.browser.app.ui.downloads.DownloadsFragment"
+        android:label="下载管理" />
 
     <fragment
         android:id="@+id/webviewFragment"

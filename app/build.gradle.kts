@@ -77,6 +77,10 @@ tasks.withType<Test>().configureEach {
         systemProperty("https.proxyHost", httpProxyHost)
         systemProperty("https.proxyPort", httpProxyPort)
     }
+    // Robolectric 默认从 Maven Central 拉 android-all jar，沙箱访问慢。
+    // 指向阿里云 maven 镜像；同时把 cache 指向 ~/.m2（我们已预下载好 jar）
+    systemProperty("robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public")
+    systemProperty("robolectric.dependency.repo.id", "aliyun")
     // 测试报告默认不输出标准输出，开 debug 时方便排查
     testLogging {
         events("passed", "skipped", "failed")
@@ -123,6 +127,10 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.1.5")
+
+    // Robolectric 4.13 + SDK 33 需要的 android-all-instrumented jar
+    // 显式声明，让 Gradle 通过镜像预解析下载到本地 cache（避免 Robolectric 运行时从 Maven Central 拉超时）
+    testImplementation("org.robolectric:android-all-instrumented:13-robolectric-9030017-i7")
 
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

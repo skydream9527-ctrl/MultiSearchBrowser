@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.browser.app.repository.HistoryRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:30.322Z" hostname="all-in-one-5-vci-xqvr6" time="0.377">
+<testsuite name="com.browser.app.repository.HistoryRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-08-10T15:14:53.606Z" hostname="all-in-one-5-vci-76lrc" time="0.315">
   <properties/>
-  <testcase name="deleteHistory_with_unsaved_entity_is_no_op" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.054"/>
-  <testcase name="getCount_reflects_repository_dedup" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.059"/>
-  <testcase name="clearHistory_empties_table_and_resets_count" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.057"/>
-  <testcase name="addHistory_then_getAllHistory_returns_item" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.049"/>
-  <testcase name="addHistory_dedupes_existing_url" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.052"/>
-  <testcase name="addHistory_does_not_dedupe_different_urls" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.05"/>
-  <testcase name="deleteHistory_removes_specific_entity" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.056"/>
+  <testcase name="deleteHistory_with_unsaved_entity_is_no_op" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.045"/>
+  <testcase name="getCount_reflects_repository_dedup" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.048"/>
+  <testcase name="clearHistory_empties_table_and_resets_count" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.051"/>
+  <testcase name="addHistory_then_getAllHistory_returns_item" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.038"/>
+  <testcase name="addHistory_dedupes_existing_url" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.055"/>
+  <testcase name="addHistory_does_not_dedupe_different_urls" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.04"/>
+  <testcase name="deleteHistory_removes_specific_entity" classname="com.browser.app.repository.HistoryRepositoryTest" time="0.036"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

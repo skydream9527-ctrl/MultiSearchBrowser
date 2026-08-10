@@ -2,6 +2,8 @@ package com.browser.app;
 
 import com.browser.app.di.DatabaseModule;
 import com.browser.app.di.PreferenceModule;
+import com.browser.app.ui.downloads.DownloadsFragment_GeneratedInjector;
+import com.browser.app.ui.downloads.DownloadsViewModel_HiltModules;
 import com.browser.app.ui.home.HomeFragment_GeneratedInjector;
 import com.browser.app.ui.home.HomeViewModel_HiltModules;
 import com.browser.app.ui.profile.BookmarksFragment_GeneratedInjector;
@@ -10,6 +12,8 @@ import com.browser.app.ui.profile.HistoryFragment_GeneratedInjector;
 import com.browser.app.ui.profile.HistoryViewModel_HiltModules;
 import com.browser.app.ui.profile.ProfileFragment_GeneratedInjector;
 import com.browser.app.ui.profile.ProfileViewModel_HiltModules;
+import com.browser.app.ui.settings.SettingsFragment_GeneratedInjector;
+import com.browser.app.ui.settings.SettingsViewModel_HiltModules;
 import com.browser.app.ui.tabs.WindowsFragment_GeneratedInjector;
 import com.browser.app.ui.tabs.WindowsViewModel_HiltModules;
 import com.browser.app.ui.webview.WebviewFragment_GeneratedInjector;
@@ -169,11 +173,13 @@ public final class BrowserApplication_HiltComponents {
           BookmarksViewModel_HiltModules.KeyModule.class,
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
+          DownloadsViewModel_HiltModules.KeyModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
           HiltWrapper_SavedStateHandleModule.class,
           HistoryViewModel_HiltModules.KeyModule.class,
           HomeViewModel_HiltModules.KeyModule.class,
           ProfileViewModel_HiltModules.KeyModule.class,
+          SettingsViewModel_HiltModules.KeyModule.class,
           WebviewViewModel_HiltModules.KeyModule.class,
           WindowsViewModel_HiltModules.KeyModule.class
       }
@@ -212,10 +218,12 @@ public final class BrowserApplication_HiltComponents {
   @Subcomponent(
       modules = {
           BookmarksViewModel_HiltModules.BindsModule.class,
+          DownloadsViewModel_HiltModules.BindsModule.class,
           HiltWrapper_HiltViewModelFactory_ViewModelModule.class,
           HistoryViewModel_HiltModules.BindsModule.class,
           HomeViewModel_HiltModules.BindsModule.class,
           ProfileViewModel_HiltModules.BindsModule.class,
+          SettingsViewModel_HiltModules.BindsModule.class,
           WebviewViewModel_HiltModules.BindsModule.class,
           WindowsViewModel_HiltModules.BindsModule.class
       }
@@ -242,10 +250,12 @@ public final class BrowserApplication_HiltComponents {
       modules = ViewWithFragmentCBuilderModule.class
   )
   @FragmentScoped
-  public abstract static class FragmentC implements HomeFragment_GeneratedInjector,
+  public abstract static class FragmentC implements DownloadsFragment_GeneratedInjector,
+      HomeFragment_GeneratedInjector,
       BookmarksFragment_GeneratedInjector,
       HistoryFragment_GeneratedInjector,
       ProfileFragment_GeneratedInjector,
+      SettingsFragment_GeneratedInjector,
       WindowsFragment_GeneratedInjector,
       WebviewFragment_GeneratedInjector,
       FragmentComponent,

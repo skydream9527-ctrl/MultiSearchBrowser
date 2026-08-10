@@ -23,5 +23,28 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /** v2 -> v3：新增 downloads 表（应用内下载管理） */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // 字段类型与 DownloadEntity 一一对应，避免 Room schema 校验失败
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS downloads (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    downloadId INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    mimetype TEXT,
+                    localUri TEXT,
+                    status INTEGER NOT NULL,
+                    totalBytes INTEGER NOT NULL,
+                    downloadedBytes INTEGER NOT NULL,
+                    timestamp INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }

@@ -70,4 +70,34 @@
     <string name="dialog_delete_bookmark_message">确定要删除这个收藏吗？</string>
     <string name="dialog_delete">删除</string>
     <string name="dialog_cancel">取消</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_default_engine">默认搜索引擎</string>
+    <string name="settings_default_ua">默认 User Agent</string>
+    <string name="settings_section_privacy">隐私与安全</string>
+    <string name="settings_section_display">显示</string>
+    <string name="settings_section_data">数据</string>
+    <string name="settings_enable_js">启用 JavaScript</string>
+    <string name="settings_enable_cookie">启用 Cookie</string>
+    <string name="settings_enable_third_party_cookie">允许第三方 Cookie</string>
+    <string name="settings_block_mixed_content">阻止混合内容</string>
+    <string name="settings_night_mode">夜间模式（强制暗黑网页）</string>
+    <string name="settings_clear_browsing_data">清除浏览数据</string>
+    <string name="settings_clear_browsing_data_title">清除浏览数据</string>
+    <string name="settings_clear_browsing_data_message">将清空浏览历史、Cookie、缓存。已打开的网页不会关闭，但可能需要重新登录。</string>
+    <string name="settings_clear_browsing_data_done">已清除浏览数据</string>
+
+    <!-- 下载管理 -->
+    <string name="downloads_title">下载管理</string>
+    <string name="downloads_empty">暂无下载记录</string>
+    <string name="downloads_status_pending">等待中</string>
+    <string name="downloads_status_running">下载中 %1$d%%</string>
+    <string name="downloads_status_successful">已完成</string>
+    <string name="downloads_status_failed">已失败</string>
+    <string name="downloads_status_paused">已暂停</string>
+    <string name="downloads_open">打开文件</string>
+    <string name="downloads_open_failed">无法打开此文件</string>
+    <string name="downloads_delete">删除记录</string>
+    <string name="downloads_delete_message">确定要删除这条下载记录吗？文件不会被删除。</string>
 </resources>

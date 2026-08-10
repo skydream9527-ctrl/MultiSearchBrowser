@@ -21,6 +21,9 @@ import hilt_aggregated_deps._com_browser_app_BrowserApplication_GeneratedInjecto
 import hilt_aggregated_deps._com_browser_app_MainActivity_GeneratedInjector;
 import hilt_aggregated_deps._com_browser_app_di_DatabaseModule;
 import hilt_aggregated_deps._com_browser_app_di_PreferenceModule;
+import hilt_aggregated_deps._com_browser_app_ui_downloads_DownloadsFragment_GeneratedInjector;
+import hilt_aggregated_deps._com_browser_app_ui_downloads_DownloadsViewModel_HiltModules_BindsModule;
+import hilt_aggregated_deps._com_browser_app_ui_downloads_DownloadsViewModel_HiltModules_KeyModule;
 import hilt_aggregated_deps._com_browser_app_ui_home_HomeFragment_GeneratedInjector;
 import hilt_aggregated_deps._com_browser_app_ui_home_HomeViewModel_HiltModules_BindsModule;
 import hilt_aggregated_deps._com_browser_app_ui_home_HomeViewModel_HiltModules_KeyModule;
@@ -33,6 +36,9 @@ import hilt_aggregated_deps._com_browser_app_ui_profile_HistoryViewModel_HiltMod
 import hilt_aggregated_deps._com_browser_app_ui_profile_ProfileFragment_GeneratedInjector;
 import hilt_aggregated_deps._com_browser_app_ui_profile_ProfileViewModel_HiltModules_BindsModule;
 import hilt_aggregated_deps._com_browser_app_ui_profile_ProfileViewModel_HiltModules_KeyModule;
+import hilt_aggregated_deps._com_browser_app_ui_settings_SettingsFragment_GeneratedInjector;
+import hilt_aggregated_deps._com_browser_app_ui_settings_SettingsViewModel_HiltModules_BindsModule;
+import hilt_aggregated_deps._com_browser_app_ui_settings_SettingsViewModel_HiltModules_KeyModule;
 import hilt_aggregated_deps._com_browser_app_ui_tabs_WindowsFragment_GeneratedInjector;
 import hilt_aggregated_deps._com_browser_app_ui_tabs_WindowsViewModel_HiltModules_BindsModule;
 import hilt_aggregated_deps._com_browser_app_ui_tabs_WindowsViewModel_HiltModules_KeyModule;
@@ -83,6 +89,9 @@ import hilt_aggregated_deps._dagger_hilt_android_internal_modules_HiltWrapper_Ac
         _com_browser_app_MainActivity_GeneratedInjector.class,
         _com_browser_app_di_DatabaseModule.class,
         _com_browser_app_di_PreferenceModule.class,
+        _com_browser_app_ui_downloads_DownloadsFragment_GeneratedInjector.class,
+        _com_browser_app_ui_downloads_DownloadsViewModel_HiltModules_BindsModule.class,
+        _com_browser_app_ui_downloads_DownloadsViewModel_HiltModules_KeyModule.class,
         _com_browser_app_ui_home_HomeFragment_GeneratedInjector.class,
         _com_browser_app_ui_home_HomeViewModel_HiltModules_BindsModule.class,
         _com_browser_app_ui_home_HomeViewModel_HiltModules_KeyModule.class,
@@ -95,6 +104,9 @@ import hilt_aggregated_deps._dagger_hilt_android_internal_modules_HiltWrapper_Ac
         _com_browser_app_ui_profile_ProfileFragment_GeneratedInjector.class,
         _com_browser_app_ui_profile_ProfileViewModel_HiltModules_BindsModule.class,
         _com_browser_app_ui_profile_ProfileViewModel_HiltModules_KeyModule.class,
+        _com_browser_app_ui_settings_SettingsFragment_GeneratedInjector.class,
+        _com_browser_app_ui_settings_SettingsViewModel_HiltModules_BindsModule.class,
+        _com_browser_app_ui_settings_SettingsViewModel_HiltModules_KeyModule.class,
         _com_browser_app_ui_tabs_WindowsFragment_GeneratedInjector.class,
         _com_browser_app_ui_tabs_WindowsViewModel_HiltModules_BindsModule.class,
         _com_browser_app_ui_tabs_WindowsViewModel_HiltModules_KeyModule.class,

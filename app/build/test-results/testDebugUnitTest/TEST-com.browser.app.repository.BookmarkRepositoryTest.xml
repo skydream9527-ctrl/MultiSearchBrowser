@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.browser.app.repository.BookmarkRepositoryTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:30Z" hostname="all-in-one-5-vci-xqvr6" time="0.311">
+<testsuite name="com.browser.app.repository.BookmarkRepositoryTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-10T15:14:53.333Z" hostname="all-in-one-5-vci-76lrc" time="0.267">
   <properties/>
-  <testcase name="toggleBookmark_does_not_affect_other_urls" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.067"/>
-  <testcase name="toggleBookmark_adds_when_absent_returns_true" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.049"/>
-  <testcase name="isBookmarked_reflects_repository_state" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.037"/>
-  <testcase name="toggleBookmark_removes_when_present_returns_false" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.048"/>
-  <testcase name="addBookmark_then_getAllBookmarks_returns_item" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.038"/>
-  <testcase name="removeBookmark_clears_url" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.072"/>
+  <testcase name="toggleBookmark_does_not_affect_other_urls" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.039"/>
+  <testcase name="toggleBookmark_adds_when_absent_returns_true" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.035"/>
+  <testcase name="isBookmarked_reflects_repository_state" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.042"/>
+  <testcase name="toggleBookmark_removes_when_present_returns_false" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.044"/>
+  <testcase name="addBookmark_then_getAllBookmarks_returns_item" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.052"/>
+  <testcase name="removeBookmark_clears_url" classname="com.browser.app.repository.BookmarkRepositoryTest" time="0.054"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

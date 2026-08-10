@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.browser.app.data.entity.WindowEntity
 import com.browser.app.repository.WindowRepository
+import com.browser.app.webview.WebViewPool
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WindowsViewModel @Inject constructor(
-    private val windowRepository: WindowRepository
+    private val windowRepository: WindowRepository,
+    private val webViewPool: WebViewPool
 ) : ViewModel() {
 
     val windows: StateFlow<List<WindowEntity>> = windowRepository.getAllWindows()
@@ -24,6 +26,8 @@ class WindowsViewModel @Inject constructor(
 
     fun deleteWindow(window: WindowEntity) {
         viewModelScope.launch {
+            // 先释放池中的 WebView，避免内存泄漏
+            webViewPool.release(window.id)
             windowRepository.deleteWindow(window)
         }
     }

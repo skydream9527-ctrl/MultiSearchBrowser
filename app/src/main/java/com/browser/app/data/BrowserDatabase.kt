@@ -3,9 +3,11 @@ package com.browser.app.data
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.browser.app.data.dao.BookmarkDao
+import com.browser.app.data.dao.DownloadDao
 import com.browser.app.data.dao.HistoryDao
 import com.browser.app.data.dao.WindowDao
 import com.browser.app.data.entity.BookmarkEntity
+import com.browser.app.data.entity.DownloadEntity
 import com.browser.app.data.entity.HistoryEntity
 import com.browser.app.data.entity.WindowEntity
 
@@ -13,13 +15,15 @@ import com.browser.app.data.entity.WindowEntity
     entities = [
         HistoryEntity::class,
         BookmarkEntity::class,
-        WindowEntity::class
+        WindowEntity::class,
+        DownloadEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class BrowserDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun windowDao(): WindowDao
+    abstract fun downloadDao(): DownloadDao
 }

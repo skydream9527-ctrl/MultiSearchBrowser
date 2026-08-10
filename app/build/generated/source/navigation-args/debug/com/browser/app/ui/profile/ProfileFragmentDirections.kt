@@ -11,5 +11,11 @@ public class ProfileFragmentDirections private constructor() {
 
     public fun actionProfileFragmentToBookmarksFragment(): NavDirections =
         ActionOnlyNavDirections(R.id.action_profileFragment_to_bookmarksFragment)
+
+    public fun actionProfileFragmentToSettingsFragment(): NavDirections =
+        ActionOnlyNavDirections(R.id.action_profileFragment_to_settingsFragment)
+
+    public fun actionProfileFragmentToDownloadsFragment(): NavDirections =
+        ActionOnlyNavDirections(R.id.action_profileFragment_to_downloadsFragment)
   }
 }

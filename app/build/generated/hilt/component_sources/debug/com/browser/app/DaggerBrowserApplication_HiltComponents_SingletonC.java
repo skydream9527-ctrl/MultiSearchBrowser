@@ -8,16 +8,22 @@ import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
 import com.browser.app.data.BrowserDatabase;
 import com.browser.app.data.dao.BookmarkDao;
+import com.browser.app.data.dao.DownloadDao;
 import com.browser.app.data.dao.HistoryDao;
 import com.browser.app.data.dao.WindowDao;
 import com.browser.app.di.DatabaseModule_ProvideBookmarkDaoFactory;
 import com.browser.app.di.DatabaseModule_ProvideBrowserDatabaseFactory;
+import com.browser.app.di.DatabaseModule_ProvideDownloadDaoFactory;
 import com.browser.app.di.DatabaseModule_ProvideHistoryDaoFactory;
 import com.browser.app.di.DatabaseModule_ProvideWindowDaoFactory;
 import com.browser.app.di.PreferenceModule_ProvidePreferenceManagerFactory;
 import com.browser.app.repository.BookmarkRepository;
+import com.browser.app.repository.DownloadRepository;
 import com.browser.app.repository.HistoryRepository;
 import com.browser.app.repository.WindowRepository;
+import com.browser.app.ui.downloads.DownloadsFragment;
+import com.browser.app.ui.downloads.DownloadsViewModel;
+import com.browser.app.ui.downloads.DownloadsViewModel_HiltModules;
 import com.browser.app.ui.home.HomeFragment;
 import com.browser.app.ui.home.HomeViewModel;
 import com.browser.app.ui.home.HomeViewModel_HiltModules;
@@ -30,13 +36,19 @@ import com.browser.app.ui.profile.HistoryViewModel_HiltModules;
 import com.browser.app.ui.profile.ProfileFragment;
 import com.browser.app.ui.profile.ProfileViewModel;
 import com.browser.app.ui.profile.ProfileViewModel_HiltModules;
+import com.browser.app.ui.settings.SettingsFragment;
+import com.browser.app.ui.settings.SettingsViewModel;
+import com.browser.app.ui.settings.SettingsViewModel_HiltModules;
 import com.browser.app.ui.tabs.WindowsFragment;
 import com.browser.app.ui.tabs.WindowsViewModel;
 import com.browser.app.ui.tabs.WindowsViewModel_HiltModules;
 import com.browser.app.ui.webview.WebviewFragment;
+import com.browser.app.ui.webview.WebviewFragment_MembersInjector;
 import com.browser.app.ui.webview.WebviewViewModel;
 import com.browser.app.ui.webview.WebviewViewModel_HiltModules;
 import com.browser.app.utils.PreferenceManager;
+import com.browser.app.webview.WebViewPool;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.internal.builders.ActivityComponentBuilder;
@@ -343,6 +355,10 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
     }
 
     @Override
+    public void injectDownloadsFragment(DownloadsFragment downloadsFragment) {
+    }
+
+    @Override
     public void injectHomeFragment(HomeFragment homeFragment) {
     }
 
@@ -359,11 +375,16 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
     }
 
     @Override
+    public void injectSettingsFragment(SettingsFragment settingsFragment) {
+    }
+
+    @Override
     public void injectWindowsFragment(WindowsFragment windowsFragment) {
     }
 
     @Override
     public void injectWebviewFragment(WebviewFragment webviewFragment) {
+      injectWebviewFragment2(webviewFragment);
     }
 
     @Override
@@ -374,6 +395,14 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
     @Override
     public ViewWithFragmentComponentBuilder viewWithFragmentComponentBuilder() {
       return new ViewWithFragmentCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl, fragmentCImpl);
+    }
+
+    @CanIgnoreReturnValue
+    private WebviewFragment injectWebviewFragment2(WebviewFragment instance) {
+      WebviewFragment_MembersInjector.injectWebViewPool(instance, singletonCImpl.webViewPoolProvider.get());
+      WebviewFragment_MembersInjector.injectPreferenceManager(instance, singletonCImpl.providePreferenceManagerProvider.get());
+      WebviewFragment_MembersInjector.injectDownloadRepository(instance, singletonCImpl.downloadRepositoryProvider.get());
+      return instance;
     }
   }
 
@@ -422,7 +451,7 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(6).put(LazyClassKeyProvider.com_browser_app_ui_profile_BookmarksViewModel, BookmarksViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_profile_HistoryViewModel, HistoryViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_profile_ProfileViewModel, ProfileViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_webview_WebviewViewModel, WebviewViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_tabs_WindowsViewModel, WindowsViewModel_HiltModules.KeyModule.provide()).build());
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(8).put(LazyClassKeyProvider.com_browser_app_ui_profile_BookmarksViewModel, BookmarksViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_downloads_DownloadsViewModel, DownloadsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_profile_HistoryViewModel, HistoryViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_profile_ProfileViewModel, ProfileViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_settings_SettingsViewModel, SettingsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_webview_WebviewViewModel, WebviewViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_browser_app_ui_tabs_WindowsViewModel, WindowsViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -442,35 +471,45 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
-
-      static String com_browser_app_ui_profile_BookmarksViewModel = "com.browser.app.ui.profile.BookmarksViewModel";
-
-      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
-
-      static String com_browser_app_ui_home_HomeViewModel = "com.browser.app.ui.home.HomeViewModel";
-
-      static String com_browser_app_ui_profile_ProfileViewModel = "com.browser.app.ui.profile.ProfileViewModel";
+      static String com_browser_app_ui_downloads_DownloadsViewModel = "com.browser.app.ui.downloads.DownloadsViewModel";
 
       static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
 
-      @KeepFieldType
-      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
+      static String com_browser_app_ui_profile_ProfileViewModel = "com.browser.app.ui.profile.ProfileViewModel";
+
+      static String com_browser_app_ui_profile_BookmarksViewModel = "com.browser.app.ui.profile.BookmarksViewModel";
+
+      static String com_browser_app_ui_home_HomeViewModel = "com.browser.app.ui.home.HomeViewModel";
+
+      static String com_browser_app_ui_settings_SettingsViewModel = "com.browser.app.ui.settings.SettingsViewModel";
+
+      static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
+
+      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
 
       @KeepFieldType
-      BookmarksViewModel com_browser_app_ui_profile_BookmarksViewModel2;
+      DownloadsViewModel com_browser_app_ui_downloads_DownloadsViewModel2;
 
       @KeepFieldType
-      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
-
-      @KeepFieldType
-      HomeViewModel com_browser_app_ui_home_HomeViewModel2;
+      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
 
       @KeepFieldType
       ProfileViewModel com_browser_app_ui_profile_ProfileViewModel2;
 
       @KeepFieldType
-      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
+      BookmarksViewModel com_browser_app_ui_profile_BookmarksViewModel2;
+
+      @KeepFieldType
+      HomeViewModel com_browser_app_ui_home_HomeViewModel2;
+
+      @KeepFieldType
+      SettingsViewModel com_browser_app_ui_settings_SettingsViewModel2;
+
+      @KeepFieldType
+      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
+
+      @KeepFieldType
+      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
     }
   }
 
@@ -483,11 +522,15 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     private Provider<BookmarksViewModel> bookmarksViewModelProvider;
 
+    private Provider<DownloadsViewModel> downloadsViewModelProvider;
+
     private Provider<HistoryViewModel> historyViewModelProvider;
 
     private Provider<HomeViewModel> homeViewModelProvider;
 
     private Provider<ProfileViewModel> profileViewModelProvider;
+
+    private Provider<SettingsViewModel> settingsViewModelProvider;
 
     private Provider<WebviewViewModel> webviewViewModelProvider;
 
@@ -507,16 +550,18 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
       this.bookmarksViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
-      this.historyViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
-      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
-      this.profileViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
-      this.webviewViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
-      this.windowsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
+      this.downloadsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.historyViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
+      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.profileViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
+      this.webviewViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
+      this.windowsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
     }
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(6).put(LazyClassKeyProvider.com_browser_app_ui_profile_BookmarksViewModel, ((Provider) bookmarksViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_profile_HistoryViewModel, ((Provider) historyViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_home_HomeViewModel, ((Provider) homeViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_profile_ProfileViewModel, ((Provider) profileViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_webview_WebviewViewModel, ((Provider) webviewViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_tabs_WindowsViewModel, ((Provider) windowsViewModelProvider)).build());
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(8).put(LazyClassKeyProvider.com_browser_app_ui_profile_BookmarksViewModel, ((Provider) bookmarksViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_downloads_DownloadsViewModel, ((Provider) downloadsViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_profile_HistoryViewModel, ((Provider) historyViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_home_HomeViewModel, ((Provider) homeViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_profile_ProfileViewModel, ((Provider) profileViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_settings_SettingsViewModel, ((Provider) settingsViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_webview_WebviewViewModel, ((Provider) webviewViewModelProvider)).put(LazyClassKeyProvider.com_browser_app_ui_tabs_WindowsViewModel, ((Provider) windowsViewModelProvider)).build());
     }
 
     @Override
@@ -526,17 +571,27 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
+      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
+
+      static String com_browser_app_ui_settings_SettingsViewModel = "com.browser.app.ui.settings.SettingsViewModel";
+
       static String com_browser_app_ui_profile_BookmarksViewModel = "com.browser.app.ui.profile.BookmarksViewModel";
 
       static String com_browser_app_ui_home_HomeViewModel = "com.browser.app.ui.home.HomeViewModel";
 
-      static String com_browser_app_ui_profile_HistoryViewModel = "com.browser.app.ui.profile.HistoryViewModel";
+      static String com_browser_app_ui_downloads_DownloadsViewModel = "com.browser.app.ui.downloads.DownloadsViewModel";
 
       static String com_browser_app_ui_profile_ProfileViewModel = "com.browser.app.ui.profile.ProfileViewModel";
 
+      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
+
       static String com_browser_app_ui_webview_WebviewViewModel = "com.browser.app.ui.webview.WebviewViewModel";
 
-      static String com_browser_app_ui_tabs_WindowsViewModel = "com.browser.app.ui.tabs.WindowsViewModel";
+      @KeepFieldType
+      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
+
+      @KeepFieldType
+      SettingsViewModel com_browser_app_ui_settings_SettingsViewModel2;
 
       @KeepFieldType
       BookmarksViewModel com_browser_app_ui_profile_BookmarksViewModel2;
@@ -545,16 +600,16 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
       HomeViewModel com_browser_app_ui_home_HomeViewModel2;
 
       @KeepFieldType
-      HistoryViewModel com_browser_app_ui_profile_HistoryViewModel2;
+      DownloadsViewModel com_browser_app_ui_downloads_DownloadsViewModel2;
 
       @KeepFieldType
       ProfileViewModel com_browser_app_ui_profile_ProfileViewModel2;
 
       @KeepFieldType
-      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
+      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
 
       @KeepFieldType
-      WindowsViewModel com_browser_app_ui_tabs_WindowsViewModel2;
+      WebviewViewModel com_browser_app_ui_webview_WebviewViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -581,20 +636,26 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
           case 0: // com.browser.app.ui.profile.BookmarksViewModel 
           return (T) new BookmarksViewModel(singletonCImpl.bookmarkRepositoryProvider.get());
 
-          case 1: // com.browser.app.ui.profile.HistoryViewModel 
+          case 1: // com.browser.app.ui.downloads.DownloadsViewModel 
+          return (T) new DownloadsViewModel(singletonCImpl.downloadRepositoryProvider.get());
+
+          case 2: // com.browser.app.ui.profile.HistoryViewModel 
           return (T) new HistoryViewModel(singletonCImpl.historyRepositoryProvider.get());
 
-          case 2: // com.browser.app.ui.home.HomeViewModel 
+          case 3: // com.browser.app.ui.home.HomeViewModel 
           return (T) new HomeViewModel(singletonCImpl.providePreferenceManagerProvider.get());
 
-          case 3: // com.browser.app.ui.profile.ProfileViewModel 
+          case 4: // com.browser.app.ui.profile.ProfileViewModel 
           return (T) new ProfileViewModel(singletonCImpl.providePreferenceManagerProvider.get());
 
-          case 4: // com.browser.app.ui.webview.WebviewViewModel 
+          case 5: // com.browser.app.ui.settings.SettingsViewModel 
+          return (T) new SettingsViewModel(singletonCImpl.providePreferenceManagerProvider.get(), singletonCImpl.historyRepositoryProvider.get(), singletonCImpl.webViewPoolProvider.get());
+
+          case 6: // com.browser.app.ui.webview.WebviewViewModel 
           return (T) new WebviewViewModel(singletonCImpl.historyRepositoryProvider.get(), singletonCImpl.bookmarkRepositoryProvider.get(), singletonCImpl.windowRepositoryProvider.get());
 
-          case 5: // com.browser.app.ui.tabs.WindowsViewModel 
-          return (T) new WindowsViewModel(singletonCImpl.windowRepositoryProvider.get());
+          case 7: // com.browser.app.ui.tabs.WindowsViewModel 
+          return (T) new WindowsViewModel(singletonCImpl.windowRepositoryProvider.get(), singletonCImpl.webViewPoolProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -678,11 +739,15 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
 
     private Provider<BrowserDatabase> provideBrowserDatabaseProvider;
 
+    private Provider<DownloadRepository> downloadRepositoryProvider;
+
+    private Provider<PreferenceManager> providePreferenceManagerProvider;
+
+    private Provider<WebViewPool> webViewPoolProvider;
+
     private Provider<BookmarkRepository> bookmarkRepositoryProvider;
 
     private Provider<HistoryRepository> historyRepositoryProvider;
-
-    private Provider<PreferenceManager> providePreferenceManagerProvider;
 
     private Provider<WindowRepository> windowRepositoryProvider;
 
@@ -690,6 +755,10 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
 
+    }
+
+    private DownloadDao downloadDao() {
+      return DatabaseModule_ProvideDownloadDaoFactory.provideDownloadDao(provideBrowserDatabaseProvider.get());
     }
 
     private BookmarkDao bookmarkDao() {
@@ -707,14 +776,17 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
       this.provideBrowserDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<BrowserDatabase>(singletonCImpl, 1));
-      this.bookmarkRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<BookmarkRepository>(singletonCImpl, 0));
-      this.historyRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<HistoryRepository>(singletonCImpl, 2));
+      this.downloadRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<DownloadRepository>(singletonCImpl, 0));
       this.providePreferenceManagerProvider = DoubleCheck.provider(new SwitchingProvider<PreferenceManager>(singletonCImpl, 3));
-      this.windowRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<WindowRepository>(singletonCImpl, 4));
+      this.webViewPoolProvider = DoubleCheck.provider(new SwitchingProvider<WebViewPool>(singletonCImpl, 2));
+      this.bookmarkRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<BookmarkRepository>(singletonCImpl, 4));
+      this.historyRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<HistoryRepository>(singletonCImpl, 5));
+      this.windowRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<WindowRepository>(singletonCImpl, 6));
     }
 
     @Override
     public void injectBrowserApplication(BrowserApplication browserApplication) {
+      injectBrowserApplication2(browserApplication);
     }
 
     @Override
@@ -732,6 +804,12 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
       return new ServiceCBuilder(singletonCImpl);
     }
 
+    @CanIgnoreReturnValue
+    private BrowserApplication injectBrowserApplication2(BrowserApplication instance) {
+      BrowserApplication_MembersInjector.injectDownloadRepository(instance, downloadRepositoryProvider.get());
+      return instance;
+    }
+
     private static final class SwitchingProvider<T> implements Provider<T> {
       private final SingletonCImpl singletonCImpl;
 
@@ -746,19 +824,25 @@ public final class DaggerBrowserApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.browser.app.repository.BookmarkRepository 
-          return (T) new BookmarkRepository(singletonCImpl.bookmarkDao());
+          case 0: // com.browser.app.repository.DownloadRepository 
+          return (T) new DownloadRepository(singletonCImpl.downloadDao(), ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           case 1: // com.browser.app.data.BrowserDatabase 
           return (T) DatabaseModule_ProvideBrowserDatabaseFactory.provideBrowserDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 2: // com.browser.app.repository.HistoryRepository 
-          return (T) new HistoryRepository(singletonCImpl.historyDao());
+          case 2: // com.browser.app.webview.WebViewPool 
+          return (T) new WebViewPool(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.providePreferenceManagerProvider.get());
 
           case 3: // com.browser.app.utils.PreferenceManager 
           return (T) PreferenceModule_ProvidePreferenceManagerFactory.providePreferenceManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 4: // com.browser.app.repository.WindowRepository 
+          case 4: // com.browser.app.repository.BookmarkRepository 
+          return (T) new BookmarkRepository(singletonCImpl.bookmarkDao());
+
+          case 5: // com.browser.app.repository.HistoryRepository 
+          return (T) new HistoryRepository(singletonCImpl.historyDao());
+
+          case 6: // com.browser.app.repository.WindowRepository 
           return (T) new WindowRepository(singletonCImpl.windowDao());
 
           default: throw new AssertionError(id);

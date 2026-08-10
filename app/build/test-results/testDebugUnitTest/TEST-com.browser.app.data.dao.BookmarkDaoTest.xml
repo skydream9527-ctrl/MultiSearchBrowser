@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.browser.app.data.dao.BookmarkDaoTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-10T03:09:22.139Z" hostname="all-in-one-5-vci-xqvr6" time="6.917">
+<testsuite name="com.browser.app.data.dao.BookmarkDaoTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-10T15:14:46.858Z" hostname="all-in-one-5-vci-76lrc" time="5.75">
   <properties/>
-  <testcase name="deleteByUrl_removes_only_matching_url" classname="com.browser.app.data.dao.BookmarkDaoTest" time="6.476"/>
-  <testcase name="getAllBookmarks_ordered_by_timestamp_desc" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.093"/>
-  <testcase name="delete_entity_removes_exact_row" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.084"/>
-  <testcase name="isBookmarked_emits_true_after_insert_and_false_after_delete" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.065"/>
-  <testcase name="insert_then_getAllBookmarks_returns_one_item" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.069"/>
-  <testcase name="getByUrl_returns_null_when_not_exists" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.04"/>
-  <testcase name="faviconUrl_can_be_persisted_as_nullable" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.043"/>
-  <testcase name="insert_with_same_url_does_not_replace_when_url_not_unique" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.046"/>
+  <testcase name="deleteByUrl_removes_only_matching_url" classname="com.browser.app.data.dao.BookmarkDaoTest" time="5.316"/>
+  <testcase name="getAllBookmarks_ordered_by_timestamp_desc" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.063"/>
+  <testcase name="delete_entity_removes_exact_row" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.073"/>
+  <testcase name="isBookmarked_emits_true_after_insert_and_false_after_delete" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.077"/>
+  <testcase name="insert_then_getAllBookmarks_returns_one_item" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.064"/>
+  <testcase name="getByUrl_returns_null_when_not_exists" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.054"/>
+  <testcase name="faviconUrl_can_be_persisted_as_nullable" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.05"/>
+  <testcase name="insert_with_same_url_does_not_replace_when_url_not_unique" classname="com.browser.app.data.dao.BookmarkDaoTest" time="0.052"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

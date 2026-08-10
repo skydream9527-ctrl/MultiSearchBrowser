@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.browser.app.data.BrowserDatabase
 import com.browser.app.data.dao.BookmarkDao
+import com.browser.app.data.dao.DownloadDao
 import com.browser.app.data.dao.HistoryDao
 import com.browser.app.data.dao.WindowDao
 import dagger.Module
@@ -40,4 +41,7 @@ object DatabaseModule {
 
     @Provides
     fun provideWindowDao(db: BrowserDatabase): WindowDao = db.windowDao()
+
+    @Provides
+    fun provideDownloadDao(db: BrowserDatabase): DownloadDao = db.downloadDao()
 }

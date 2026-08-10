@@ -13,6 +13,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
 import com.browser.app.data.dao.BookmarkDao;
 import com.browser.app.data.dao.BookmarkDao_Impl;
+import com.browser.app.data.dao.DownloadDao;
+import com.browser.app.data.dao.DownloadDao_Impl;
 import com.browser.app.data.dao.HistoryDao;
 import com.browser.app.data.dao.HistoryDao_Impl;
 import com.browser.app.data.dao.WindowDao;
@@ -38,17 +40,20 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
 
   private volatile WindowDao _windowDao;
 
+  private volatile DownloadDao _downloadDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `history` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `timestamp` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `bookmarks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `faviconUrl` TEXT)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `windows` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `timestamp` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `downloads` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `downloadId` INTEGER NOT NULL, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `mimetype` TEXT, `localUri` TEXT, `status` INTEGER NOT NULL, `totalBytes` INTEGER NOT NULL, `downloadedBytes` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cc4b22c77a338600818365a66d085ae2')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ab19b4855fdd45952d14cee844bed073')");
       }
 
       @Override
@@ -56,6 +61,7 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
         db.execSQL("DROP TABLE IF EXISTS `history`");
         db.execSQL("DROP TABLE IF EXISTS `bookmarks`");
         db.execSQL("DROP TABLE IF EXISTS `windows`");
+        db.execSQL("DROP TABLE IF EXISTS `downloads`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -142,9 +148,29 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
                   + " Expected:\n" + _infoWindows + "\n"
                   + " Found:\n" + _existingWindows);
         }
+        final HashMap<String, TableInfo.Column> _columnsDownloads = new HashMap<String, TableInfo.Column>(10);
+        _columnsDownloads.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("downloadId", new TableInfo.Column("downloadId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("title", new TableInfo.Column("title", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("url", new TableInfo.Column("url", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("mimetype", new TableInfo.Column("mimetype", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("localUri", new TableInfo.Column("localUri", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("status", new TableInfo.Column("status", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("totalBytes", new TableInfo.Column("totalBytes", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("downloadedBytes", new TableInfo.Column("downloadedBytes", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsDownloads.put("timestamp", new TableInfo.Column("timestamp", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysDownloads = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesDownloads = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoDownloads = new TableInfo("downloads", _columnsDownloads, _foreignKeysDownloads, _indicesDownloads);
+        final TableInfo _existingDownloads = TableInfo.read(db, "downloads");
+        if (!_infoDownloads.equals(_existingDownloads)) {
+          return new RoomOpenHelper.ValidationResult(false, "downloads(com.browser.app.data.entity.DownloadEntity).\n"
+                  + " Expected:\n" + _infoDownloads + "\n"
+                  + " Found:\n" + _existingDownloads);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "cc4b22c77a338600818365a66d085ae2", "6f66f1db118cec61cd18e2864af82448");
+    }, "ab19b4855fdd45952d14cee844bed073", "61de770f11c754868dbe816db0c196b0");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -155,7 +181,7 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "history","bookmarks","windows");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "history","bookmarks","windows","downloads");
   }
 
   @Override
@@ -167,6 +193,7 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
       _db.execSQL("DELETE FROM `history`");
       _db.execSQL("DELETE FROM `bookmarks`");
       _db.execSQL("DELETE FROM `windows`");
+      _db.execSQL("DELETE FROM `downloads`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -184,6 +211,7 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
     _typeConvertersMap.put(HistoryDao.class, HistoryDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(BookmarkDao.class, BookmarkDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(WindowDao.class, WindowDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(DownloadDao.class, DownloadDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -240,6 +268,20 @@ public final class BrowserDatabase_Impl extends BrowserDatabase {
           _windowDao = new WindowDao_Impl(this);
         }
         return _windowDao;
+      }
+    }
+  }
+
+  @Override
+  public DownloadDao downloadDao() {
+    if (_downloadDao != null) {
+      return _downloadDao;
+    } else {
+      synchronized(this) {
+        if(_downloadDao == null) {
+          _downloadDao = new DownloadDao_Impl(this);
+        }
+        return _downloadDao;
       }
     }
   }

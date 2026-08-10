@@ -12,9 +12,10 @@ import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -25,6 +26,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.browser.app.R
 import com.browser.app.databinding.FragmentWebviewBinding
+import com.browser.app.webview.WebViewPool
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -33,6 +35,18 @@ class WebviewFragment : Fragment() {
     private var _binding: FragmentWebviewBinding? = null
     private val binding get() = _binding!!
     private val viewModel: WebviewViewModel by viewModels()
+
+    @javax.inject.Inject
+    lateinit var webViewPool: WebViewPool
+
+    @javax.inject.Inject
+    lateinit var preferenceManager: com.browser.app.utils.PreferenceManager
+
+    @javax.inject.Inject
+    lateinit var downloadRepository: com.browser.app.repository.DownloadRepository
+
+    /** 由 WebViewPool 复用提供的 WebView，Fragment 销毁时不 destroy，归还给池。 */
+    private lateinit var webView: WebView
 
     private var currentUrl: String = ""
     private var currentTitle: String = ""
@@ -77,41 +91,50 @@ class WebviewFragment : Fragment() {
         val incomingUrl = args.url
         val windowId = args.windowId
 
-        setupWebview()
+        attachWebView(windowId)
         setupToolbar()
         setupErrorRetry()
 
-        // 多窗口：windowId > 0 时从 DB 加载已存在的 tab；否则新建一个 tab
+        // 多窗口：windowId > 0 时从 DB 加载已存在的 tab；否则新建一个 tab。
+        // 注意：windowId > 0 时 WebView 复用 pool，若之前未加载过 url（首次进入），仍需 loadUrl。
         viewLifecycleOwner.lifecycleScope.launch {
             val realUrl = viewModel.initTab(windowId, incomingUrl)
             currentUrl = realUrl
             observeBookmarkState()
-            loadUrl(realUrl)
+            // 仅当 WebView 当前 url 与目标 url 不同时才加载，避免切 tab 重复刷新
+            if (webView.url == null || webView.url != realUrl) {
+                loadUrl(realUrl)
+            } else {
+                // 复用同一 WebView：URL 没变，仅同步 UI 状态
+                binding.urlBar.setText(realUrl)
+                updateNavigationButtons()
+            }
         }
     }
 
+    /**
+     * 从 WebViewPool 拿到 windowId 对应的 WebView，挂载到容器里。
+     * 若 WebView 已经在父容器里（从其他 Fragment 切过来），先 detach 再 attach。
+     */
+    private fun attachWebView(windowId: Long) {
+        webView = webViewPool.obtain(windowId)
+        (webView.parent as? ViewGroup)?.removeView(webView)
+        binding.webviewContainer.addView(
+            webView,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        // 用户在设置里选了"桌面 UA"则初始化 useDesktopUA = true，
+        // 单次长按 refresh 仍可临时切换，但切 tab 后会回到设置默认值
+        useDesktopUA = preferenceManager.defaultUserAgent == "desktop"
+        webView.settings.userAgentString = if (useDesktopUA) DESKTOP_UA else null
+        setupWebview()
+    }
+
     private fun setupWebview() {
-        binding.webview.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            loadWithOverviewMode = true
-            useWideViewPort = true
-            builtInZoomControls = true
-            displayZoomControls = false
-            cacheMode = WebSettings.LOAD_DEFAULT
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            // 允许文件上传
-            allowFileAccess = false
-            allowContentAccess = true
-            mediaPlaybackRequiresUserGesture = true
-        }
-
-        // 启用 Cookie 持久化
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(binding.webview, false)
-
-        binding.webview.webViewClient = object : WebViewClient() {
+        webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest?
@@ -153,7 +176,7 @@ class WebviewFragment : Fragment() {
             override fun onReceivedHttpError(
                 view: WebView?,
                 request: WebResourceRequest?,
-                errorResponse: android.webkit.WebResourceResponse?
+                errorResponse: WebResourceResponse?
             ) {
                 super.onReceivedHttpError(view, request, errorResponse)
                 if (request?.isForMainFrame == true) {
@@ -163,7 +186,7 @@ class WebviewFragment : Fragment() {
             }
         }
 
-        binding.webview.webChromeClient = object : WebChromeClient() {
+        webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 super.onProgressChanged(view, newProgress)
                 if (newProgress < 100) {
@@ -201,25 +224,25 @@ class WebviewFragment : Fragment() {
         }
 
         // 下载：交给系统 DownloadManager
-        binding.webview.setDownloadListener { url, _, _, mimetype, _ ->
+        webView.setDownloadListener { url, _, _, mimetype, _ ->
             handleDownload(url, mimetype)
         }
 
-        binding.swipeRefresh.setOnRefreshListener { binding.webview.reload() }
+        binding.swipeRefresh.setOnRefreshListener { webView.reload() }
     }
 
     private fun setupToolbar() {
         binding.btnBack.setOnClickListener {
-            if (binding.webview.canGoBack()) {
-                binding.webview.goBack()
+            if (webView.canGoBack()) {
+                webView.goBack()
             } else {
                 findNavController().navigateUp()
             }
         }
 
         binding.btnForward.setOnClickListener {
-            if (binding.webview.canGoForward()) {
-                binding.webview.goForward()
+            if (webView.canGoForward()) {
+                webView.goForward()
             }
         }
 
@@ -240,7 +263,7 @@ class WebviewFragment : Fragment() {
             }
         }
 
-        binding.btnRefresh.setOnClickListener { binding.webview.reload() }
+        binding.btnRefresh.setOnClickListener { webView.reload() }
         // 长按 refresh 切换桌面/移动 UA
         binding.btnRefresh.setOnLongClickListener {
             toggleUserAgent()
@@ -253,7 +276,7 @@ class WebviewFragment : Fragment() {
     private fun setupErrorRetry() {
         binding.btnRetry.setOnClickListener {
             hideError()
-            binding.webview.reload()
+            webView.reload()
         }
     }
 
@@ -270,7 +293,7 @@ class WebviewFragment : Fragment() {
 
     private fun loadUrl(url: String) {
         binding.progressBar.visibility = View.VISIBLE
-        binding.webview.loadUrl(url)
+        webView.loadUrl(url)
         binding.urlBar.setText(url)
     }
 
@@ -296,8 +319,8 @@ class WebviewFragment : Fragment() {
     }
 
     private fun updateNavigationButtons() {
-        binding.btnBack.isEnabled = binding.webview.canGoBack()
-        binding.btnForward.isEnabled = binding.webview.canGoForward()
+        binding.btnBack.isEnabled = webView.canGoBack()
+        binding.btnForward.isEnabled = webView.canGoForward()
         binding.btnBack.alpha = if (binding.btnBack.isEnabled) 1f else 0.4f
         binding.btnForward.alpha = if (binding.btnForward.isEnabled) 1f else 0.4f
     }
@@ -305,7 +328,7 @@ class WebviewFragment : Fragment() {
     private fun toggleUserAgent() {
         useDesktopUA = !useDesktopUA
         val ua = if (useDesktopUA) DESKTOP_UA else null
-        binding.webview.settings.userAgentString = ua
+        webView.settings.userAgentString = ua
         val label = if (useDesktopUA) {
             getString(R.string.webview_ua_desktop)
         } else {
@@ -316,7 +339,7 @@ class WebviewFragment : Fragment() {
             getString(R.string.webview_ua_switched, label),
             Toast.LENGTH_SHORT
         ).show()
-        binding.webview.reload()
+        webView.reload()
     }
 
     private fun handleExternalUrl(url: String): Boolean {
@@ -359,10 +382,21 @@ class WebviewFragment : Fragment() {
                 if (!cookies.isNullOrEmpty()) {
                     addRequestHeader("Cookie", cookies)
                 }
+                // 状态栏通知里显示文件名 / 下载来源
+                setTitle(Uri.parse(url).lastPathSegment ?: url)
             }
             val dm = requireContext()
                 .getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            dm.enqueue(request)
+            val downloadId = dm.enqueue(request)
+            // 落库一条下载记录，便于 DownloadsFragment 展示
+            viewLifecycleOwner.lifecycleScope.launch {
+                downloadRepository.insertRecord(
+                    downloadId = downloadId,
+                    title = Uri.parse(url).lastPathSegment ?: url,
+                    url = url,
+                    mimetype = mimetype
+                )
+            }
             Toast.makeText(
                 requireContext(),
                 R.string.webview_download_started,
@@ -396,15 +430,15 @@ class WebviewFragment : Fragment() {
     }
 
     override fun onPause() {
-        binding.webview.onPause()
-        binding.webview.pauseTimers()
+        webView.onPause()
+        webView.pauseTimers()
         super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
-        binding.webview.onResume()
-        binding.webview.resumeTimers()
+        webView.onResume()
+        webView.resumeTimers()
         updateNavigationButtons()
     }
 
@@ -412,7 +446,11 @@ class WebviewFragment : Fragment() {
         // 取消未完成的文件选择回调，防止 WebView 卡死
         pendingFileChooserCallback?.onReceiveValue(null)
         pendingFileChooserCallback = null
-        binding.webview.destroy()
+        // 解绑客户端回调：避免切回时回调持有已 destroy 的 binding
+        webView.setDownloadListener(null)
+        // 从容器移除 WebView，但不 destroy —— 它由 WebViewPool 统一管理生命周期
+        (webView.parent as? ViewGroup)?.removeView(webView)
+        binding.swipeRefresh.setOnRefreshListener(null)
         super.onDestroyView()
         _binding = null
     }

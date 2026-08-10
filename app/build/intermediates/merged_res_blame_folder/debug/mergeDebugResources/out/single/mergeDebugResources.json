@@ -52,6 +52,10 @@
         "source": "com.browser.app-main-56:/drawable/ic_history.xml"
     },
     {
+        "merged": "com.browser.app-debug-54:/layout_fragment_downloads.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_downloads.xml"
+    },
+    {
         "merged": "com.browser.app-debug-54:/drawable_ic_arrow_right.xml.flat",
         "source": "com.browser.app-main-56:/drawable/ic_arrow_right.xml"
     },
@@ -66,6 +70,10 @@
     {
         "merged": "com.browser.app-debug-54:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
         "source": "com.browser.app-main-56:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/layout_item_download.xml.flat",
+        "source": "com.browser.app-main-56:/layout/item_download.xml"
     },
     {
         "merged": "com.browser.app-debug-54:/drawable_ic_close.xml.flat",
@@ -86,6 +94,10 @@
     {
         "merged": "com.browser.app-debug-54:/mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "com.browser.app-main-56:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.browser.app-debug-54:/layout_fragment_settings.xml.flat",
+        "source": "com.browser.app-main-56:/layout/fragment_settings.xml"
     },
     {
         "merged": "com.browser.app-debug-54:/drawable_card_bg.xml.flat",

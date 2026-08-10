@@ -4,9 +4,9 @@ package com.browser.app.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -63,14 +63,15 @@ public final class FragmentWebviewBinding implements ViewBinding {
   public final EditText urlBar;
 
   @NonNull
-  public final WebView webview;
+  public final FrameLayout webviewContainer;
 
   private FragmentWebviewBinding(@NonNull ConstraintLayout rootView, @NonNull ImageButton btnBack,
       @NonNull ImageButton btnBookmark, @NonNull ImageButton btnForward,
       @NonNull ImageButton btnRefresh, @NonNull Button btnRetry, @NonNull LinearLayout errorLayout,
       @NonNull TextView errorMessage, @NonNull TextView errorTitle,
       @NonNull ProgressBar progressBar, @NonNull SwipeRefreshLayout swipeRefresh,
-      @NonNull LinearLayout toolbar, @NonNull EditText urlBar, @NonNull WebView webview) {
+      @NonNull LinearLayout toolbar, @NonNull EditText urlBar,
+      @NonNull FrameLayout webviewContainer) {
     this.rootView = rootView;
     this.btnBack = btnBack;
     this.btnBookmark = btnBookmark;
@@ -84,7 +85,7 @@ public final class FragmentWebviewBinding implements ViewBinding {
     this.swipeRefresh = swipeRefresh;
     this.toolbar = toolbar;
     this.urlBar = urlBar;
-    this.webview = webview;
+    this.webviewContainer = webviewContainer;
   }
 
   @Override
@@ -186,15 +187,15 @@ public final class FragmentWebviewBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.webview;
-      WebView webview = ViewBindings.findChildViewById(rootView, id);
-      if (webview == null) {
+      id = R.id.webview_container;
+      FrameLayout webviewContainer = ViewBindings.findChildViewById(rootView, id);
+      if (webviewContainer == null) {
         break missingId;
       }
 
       return new FragmentWebviewBinding((ConstraintLayout) rootView, btnBack, btnBookmark,
           btnForward, btnRefresh, btnRetry, errorLayout, errorMessage, errorTitle, progressBar,
-          swipeRefresh, toolbar, urlBar, webview);
+          swipeRefresh, toolbar, urlBar, webviewContainer);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

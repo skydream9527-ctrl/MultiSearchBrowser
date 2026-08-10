@@ -31,6 +31,9 @@ public final class FragmentProfileBinding implements ViewBinding {
   public final LinearLayout bookmarksSection;
 
   @NonNull
+  public final LinearLayout downloadsSection;
+
+  @NonNull
   public final LinearLayout historySection;
 
   @NonNull
@@ -41,12 +44,13 @@ public final class FragmentProfileBinding implements ViewBinding {
 
   private FragmentProfileBinding(@NonNull ConstraintLayout rootView, @NonNull ImageView avatarImage,
       @NonNull LinearLayout avatarSection, @NonNull LinearLayout bookmarksSection,
-      @NonNull LinearLayout historySection, @NonNull LinearLayout settingsSection,
-      @NonNull TextView uploadAvatarBtn) {
+      @NonNull LinearLayout downloadsSection, @NonNull LinearLayout historySection,
+      @NonNull LinearLayout settingsSection, @NonNull TextView uploadAvatarBtn) {
     this.rootView = rootView;
     this.avatarImage = avatarImage;
     this.avatarSection = avatarSection;
     this.bookmarksSection = bookmarksSection;
+    this.downloadsSection = downloadsSection;
     this.historySection = historySection;
     this.settingsSection = settingsSection;
     this.uploadAvatarBtn = uploadAvatarBtn;
@@ -97,6 +101,12 @@ public final class FragmentProfileBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.downloads_section;
+      LinearLayout downloadsSection = ViewBindings.findChildViewById(rootView, id);
+      if (downloadsSection == null) {
+        break missingId;
+      }
+
       id = R.id.history_section;
       LinearLayout historySection = ViewBindings.findChildViewById(rootView, id);
       if (historySection == null) {
@@ -116,7 +126,7 @@ public final class FragmentProfileBinding implements ViewBinding {
       }
 
       return new FragmentProfileBinding((ConstraintLayout) rootView, avatarImage, avatarSection,
-          bookmarksSection, historySection, settingsSection, uploadAvatarBtn);
+          bookmarksSection, downloadsSection, historySection, settingsSection, uploadAvatarBtn);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
