@@ -9,5 +9,7 @@ data class WindowEntity(
     val id: Long = 0,
     val title: String,
     val url: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    /** 无痕 tab：不写历史、关闭 Cookie、退出时清理缓存 */
+    val isIncognito: Boolean = false
 )

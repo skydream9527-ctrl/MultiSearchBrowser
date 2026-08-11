@@ -223,6 +223,49 @@ public final class HistoryDao_Impl implements HistoryDao {
   }
 
   @Override
+  public Object searchHistory(final String query,
+      final Continuation<? super List<HistoryEntity>> $completion) {
+    final String _sql = "SELECT * FROM history WHERE title LIKE '%' || ? || '%' OR url LIKE '%' || ? || '%' ORDER BY timestamp DESC LIMIT 10";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindString(_argIndex, query);
+    _argIndex = 2;
+    _statement.bindString(_argIndex, query);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<HistoryEntity>>() {
+      @Override
+      @NonNull
+      public List<HistoryEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "url");
+          final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
+          final List<HistoryEntity> _result = new ArrayList<HistoryEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final HistoryEntity _item;
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpTitle;
+            _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            final String _tmpUrl;
+            _tmpUrl = _cursor.getString(_cursorIndexOfUrl);
+            final long _tmpTimestamp;
+            _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
+            _item = new HistoryEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<Integer> getCount() {
     final String _sql = "SELECT COUNT(*) FROM history";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);

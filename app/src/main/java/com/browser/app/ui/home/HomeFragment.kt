@@ -1,19 +1,27 @@
 package com.browser.app.ui.home
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager
 import com.browser.app.R
 import com.browser.app.databinding.FragmentHomeBinding
 import com.browser.app.utils.SearchEngine
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -22,6 +30,14 @@ class HomeFragment : Fragment() {
 
     private val viewModel: HomeViewModel by viewModels()
     private var selectedEngine: SearchEngine = SearchEngine.BAIDU
+    private lateinit var suggestionAdapter: SuggestionAdapter
+    private val searchInputWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable?) {
+            viewModel.updateSuggestions(s?.toString().orEmpty())
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,7 +53,9 @@ class HomeFragment : Fragment() {
         selectedEngine = viewModel.selectedEngine()
         setupSearchEngines()
         setupSearch()
+        setupSuggestions()
         setupQuickLinks()
+        setupCommonSites()
     }
 
     private fun setupQuickLinks() {
@@ -46,6 +64,14 @@ class HomeFragment : Fragment() {
         }
         binding.quickLinks.layoutManager = GridLayoutManager(requireContext(), 4)
         binding.quickLinks.adapter = adapter
+    }
+
+    private fun setupCommonSites() {
+        val adapter = QuickSiteAdapter { site ->
+            navigateToWebview(site.url)
+        }
+        binding.commonSites.layoutManager = GridLayoutManager(requireContext(), 4)
+        binding.commonSites.adapter = adapter
     }
 
     private fun setupSearchEngines() {
@@ -95,12 +121,62 @@ class HomeFragment : Fragment() {
                 false
             }
         }
+
+        // 实时输入触发建议
+        binding.searchInput.addTextChangedListener(searchInputWatcher)
+
+        // 失去焦点时隐藏下拉
+        binding.searchInput.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                binding.suggestionsList.isVisible = false
+            }
+        }
+    }
+
+    private fun setupSuggestions() {
+        suggestionAdapter = SuggestionAdapter { suggestion ->
+            binding.suggestionsList.isVisible = false
+            val url = when (suggestion) {
+                is HomeViewModel.SearchSuggestion.DirectSearch -> {
+                    viewModel.buildSearchUrl(suggestion.query)
+                }
+                is HomeViewModel.SearchSuggestion.History -> suggestion.url
+            }
+            if (url != null) {
+                // 把选中的关键词填回输入框，便于用户继续编辑
+                binding.searchInput.setText(
+                    when (suggestion) {
+                        is HomeViewModel.SearchSuggestion.DirectSearch -> suggestion.query
+                        is HomeViewModel.SearchSuggestion.History -> suggestion.displayText
+                    }
+                )
+                navigateToWebview(url)
+            } else {
+                Toast.makeText(requireContext(), R.string.search_empty_input, Toast.LENGTH_SHORT).show()
+            }
+        }
+        binding.suggestionsList.layoutManager = LinearLayoutManager(requireContext())
+        binding.suggestionsList.adapter = suggestionAdapter
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.suggestions.collect { list ->
+                    suggestionAdapter.submitList(list) {
+                        // 显示 / 隐藏下拉：有内容且 search_input 持有焦点
+                        binding.suggestionsList.isVisible =
+                            list.isNotEmpty() && binding.searchInput.hasFocus()
+                    }
+                }
+            }
+        }
     }
 
     private fun performSearch() {
         val raw = binding.searchInput.text.toString().trim()
         val url = viewModel.buildSearchUrl(raw)
         if (url != null) {
+            // 触发搜索时隐藏下拉
+            binding.suggestionsList.isVisible = false
             navigateToWebview(url)
         } else {
             Toast.makeText(requireContext(), R.string.search_empty_input, Toast.LENGTH_SHORT).show()
@@ -113,6 +189,8 @@ class HomeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        // 解绑 TextWatcher 避免持有已 destroy 的 binding
+        binding.searchInput.removeTextChangedListener(searchInputWatcher)
         super.onDestroyView()
         _binding = null
     }

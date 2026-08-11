@@ -12,8 +12,8 @@ class WindowRepository @Inject constructor(private val windowDao: WindowDao) {
 
     fun getCount(): Flow<Int> = windowDao.getCount()
 
-    suspend fun addWindow(title: String, url: String): Long {
-        return windowDao.insert(WindowEntity(title = title, url = url))
+    suspend fun addWindow(title: String, url: String, isIncognito: Boolean = false): Long {
+        return windowDao.insert(WindowEntity(title = title, url = url, isIncognito = isIncognito))
     }
 
     suspend fun updateWindow(window: WindowEntity) {

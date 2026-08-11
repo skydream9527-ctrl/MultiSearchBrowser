@@ -31,7 +31,15 @@ class WindowAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(window: WindowEntity) {
-            binding.title.text = window.title.ifEmpty { itemView.context.getString(R.string.text_no_title) }
+            val baseTitle = window.title.ifEmpty {
+                itemView.context.getString(R.string.text_no_title)
+            }
+            // 无痕 tab 标题前加标记，让用户在窗口列表中一眼区分
+            binding.title.text = if (window.isIncognito) {
+                itemView.context.getString(R.string.incognito_hint)
+            } else {
+                baseTitle
+            }
             binding.url.text = window.url
             binding.root.setOnClickListener { onItemClick(window) }
             binding.closeBtn.setOnClickListener { onCloseClick(window) }

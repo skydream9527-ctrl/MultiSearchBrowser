@@ -23,6 +23,9 @@ public final class FragmentWindowsBinding implements ViewBinding {
   private final ConstraintLayout rootView;
 
   @NonNull
+  public final ImageButton addIncognitoBtn;
+
+  @NonNull
   public final ImageButton addWindowBtn;
 
   @NonNull
@@ -38,9 +41,11 @@ public final class FragmentWindowsBinding implements ViewBinding {
   public final RecyclerView windowsList;
 
   private FragmentWindowsBinding(@NonNull ConstraintLayout rootView,
-      @NonNull ImageButton addWindowBtn, @NonNull TextView emptyText, @NonNull LinearLayout header,
-      @NonNull TextView windowCount, @NonNull RecyclerView windowsList) {
+      @NonNull ImageButton addIncognitoBtn, @NonNull ImageButton addWindowBtn,
+      @NonNull TextView emptyText, @NonNull LinearLayout header, @NonNull TextView windowCount,
+      @NonNull RecyclerView windowsList) {
     this.rootView = rootView;
+    this.addIncognitoBtn = addIncognitoBtn;
     this.addWindowBtn = addWindowBtn;
     this.emptyText = emptyText;
     this.header = header;
@@ -75,6 +80,12 @@ public final class FragmentWindowsBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.add_incognito_btn;
+      ImageButton addIncognitoBtn = ViewBindings.findChildViewById(rootView, id);
+      if (addIncognitoBtn == null) {
+        break missingId;
+      }
+
       id = R.id.add_window_btn;
       ImageButton addWindowBtn = ViewBindings.findChildViewById(rootView, id);
       if (addWindowBtn == null) {
@@ -105,8 +116,8 @@ public final class FragmentWindowsBinding implements ViewBinding {
         break missingId;
       }
 
-      return new FragmentWindowsBinding((ConstraintLayout) rootView, addWindowBtn, emptyText,
-          header, windowCount, windowsList);
+      return new FragmentWindowsBinding((ConstraintLayout) rootView, addIncognitoBtn, addWindowBtn,
+          emptyText, header, windowCount, windowsList);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -32,7 +32,11 @@ class BookmarkAdapter(
 
         fun bind(bookmark: BookmarkEntity) {
             binding.title.text = bookmark.title.ifEmpty { itemView.context.getString(R.string.text_no_title) }
-            binding.url.text = bookmark.url
+            binding.url.text = if (bookmark.folder.isEmpty()) {
+                bookmark.url
+            } else {
+                "📁 ${bookmark.folder} · ${bookmark.url}"
+            }
             binding.root.setOnClickListener { onItemClick(bookmark) }
             binding.root.setOnLongClickListener {
                 onLongClick(bookmark)

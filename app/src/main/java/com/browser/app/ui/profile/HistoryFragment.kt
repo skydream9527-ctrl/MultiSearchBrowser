@@ -1,6 +1,8 @@
 package com.browser.app.ui.profile
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,6 +27,14 @@ class HistoryFragment : Fragment() {
     private val viewModel: HistoryViewModel by viewModels()
     private lateinit var adapter: HistoryAdapter
 
+    private val searchInputWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            viewModel.updateSearchQuery(s?.toString().orEmpty())
+        }
+        override fun afterTextChanged(s: Editable?) = Unit
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -37,7 +47,8 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
-        observeHistory()
+        setupSearch()
+        observeItems()
     }
 
     private fun setupRecyclerView() {
@@ -53,13 +64,17 @@ class HistoryFragment : Fragment() {
         binding.historyList.adapter = adapter
     }
 
-    private fun observeHistory() {
+    private fun setupSearch() {
+        binding.searchInput.addTextChangedListener(searchInputWatcher)
+    }
+
+    private fun observeItems() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.history.collect { historyList ->
-                    adapter.submitList(historyList)
+                viewModel.items.collect { items ->
+                    adapter.submitList(items)
                     binding.emptyText.visibility =
-                        if (historyList.isEmpty()) View.VISIBLE else View.GONE
+                        if (items.isEmpty()) View.VISIBLE else View.GONE
                 }
             }
         }
@@ -76,6 +91,7 @@ class HistoryFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        binding.searchInput.removeTextChangedListener(searchInputWatcher)
         _binding = null
     }
 }

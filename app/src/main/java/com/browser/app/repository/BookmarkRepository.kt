@@ -10,6 +10,8 @@ import javax.inject.Singleton
 class BookmarkRepository @Inject constructor(private val bookmarkDao: BookmarkDao) {
     fun getAllBookmarks(): Flow<List<BookmarkEntity>> = bookmarkDao.getAllBookmarks()
 
+    fun observeFolders(): Flow<List<String>> = bookmarkDao.observeFolders()
+
     fun isBookmarked(url: String): Flow<Boolean> = bookmarkDao.isBookmarked(url)
 
     suspend fun addBookmark(title: String, url: String) {
@@ -18,6 +20,14 @@ class BookmarkRepository @Inject constructor(private val bookmarkDao: BookmarkDa
 
     suspend fun removeBookmark(url: String) {
         bookmarkDao.deleteByUrl(url)
+    }
+
+    suspend fun updateBookmark(bookmark: BookmarkEntity) {
+        bookmarkDao.update(bookmark)
+    }
+
+    suspend fun moveFolder(id: Long, folder: String) {
+        bookmarkDao.moveFolder(id, folder)
     }
 
     suspend fun toggleBookmark(title: String, url: String): Boolean {

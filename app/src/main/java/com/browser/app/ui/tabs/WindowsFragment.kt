@@ -41,7 +41,7 @@ class WindowsFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = WindowAdapter(
-            onItemClick = { window -> navigateToWebview(window.url, window.id) },
+            onItemClick = { window -> navigateToWebview(window.url, window.id, window.isIncognito) },
             onCloseClick = { window -> viewModel.deleteWindow(window) }
         )
         binding.windowsList.layoutManager = LinearLayoutManager(requireContext())
@@ -68,11 +68,17 @@ class WindowsFragment : Fragment() {
     }
 
     private fun setupAddButton() {
-        binding.addWindowBtn.setOnClickListener { navigateToWebview("https://www.baidu.com", 0L) }
+        binding.addWindowBtn.setOnClickListener {
+            navigateToWebview("https://www.baidu.com", 0L, isIncognito = false)
+        }
+        binding.addIncognitoBtn.setOnClickListener {
+            navigateToWebview("https://www.baidu.com", 0L, isIncognito = true)
+        }
     }
 
-    private fun navigateToWebview(url: String, windowId: Long) {
-        val action = WindowsFragmentDirections.actionWindowsFragmentToWebviewFragment(url, windowId)
+    private fun navigateToWebview(url: String, windowId: Long, isIncognito: Boolean) {
+        val action = WindowsFragmentDirections
+            .actionWindowsFragmentToWebviewFragment(url, windowId, isIncognito)
         findNavController().navigate(action)
     }
 

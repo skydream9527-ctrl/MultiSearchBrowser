@@ -8,6 +8,9 @@
     <string name="tab_back">返回</string>
     <string name="tab_profile">我的</string>
     <string name="history_title">浏览历史</string>
+    <string name="history_search_hint">搜索历史记录</string>
+    <string name="history_group_today">今天</string>
+    <string name="history_group_yesterday">昨天</string>
     <string name="bookmarks_title">收藏内容</string>
     <string name="avatar_title">上传头像</string>
     <string name="clear_history">清空历史</string>
@@ -44,7 +47,16 @@
     <!-- 首页 -->
     <string name="home_select_engine">选择搜索引擎</string>
     <string name="home_quick_links">快捷入口</string>
+    <string name="home_common_sites">常用网站</string>
     <string name="search_empty_input">请输入搜索内容</string>
+    <string name="site_weibo">微博</string>
+    <string name="site_zhihu">知乎</string>
+    <string name="site_taobao">淘宝</string>
+    <string name="site_jd">京东</string>
+    <string name="site_bilibili">B站</string>
+    <string name="site_douyin">抖音</string>
+    <string name="site_github">GitHub</string>
+    <string name="site_wikipedia">维基百科</string>
 
     <!-- WebView 收藏 -->
     <string name="bookmark_added">已添加收藏</string>
@@ -70,6 +82,15 @@
     <string name="dialog_delete_bookmark_message">确定要删除这个收藏吗？</string>
     <string name="dialog_delete">删除</string>
     <string name="dialog_cancel">取消</string>
+    <string name="dialog_save">保存</string>
+
+    <!-- 收藏编辑 / 文件夹 -->
+    <string name="bookmark_edit_title">编辑收藏</string>
+    <string name="bookmark_edit_name">名称</string>
+    <string name="bookmark_edit_folder">文件夹</string>
+    <string name="bookmark_edit_folder_hint">输入新文件夹名或留空</string>
+    <string name="bookmark_folder_all">全部</string>
+    <string name="bookmark_folder_unfiled">未分组</string>
 
     <!-- 设置页 -->
     <string name="settings_title">设置</string>
@@ -87,6 +108,16 @@
     <string name="settings_clear_browsing_data_title">清除浏览数据</string>
     <string name="settings_clear_browsing_data_message">将清空浏览历史、Cookie、缓存。已打开的网页不会关闭，但可能需要重新登录。</string>
     <string name="settings_clear_browsing_data_done">已清除浏览数据</string>
+
+    <!-- 无痕模式 -->
+    <string name="new_incognito_window">新建无痕窗口</string>
+    <string name="incognito_hint">无痕模式：不记录历史、不保存 Cookie</string>
+
+    <!-- 查找页面 -->
+    <string name="find_in_page">查找页面</string>
+    <string name="find_next">下一个</string>
+    <string name="find_prev">上一个</string>
+    <string name="find_close">关闭查找</string>
 
     <!-- 下载管理 -->
     <string name="downloads_title">下载管理</string>

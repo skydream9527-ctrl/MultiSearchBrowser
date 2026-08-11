@@ -1,58 +1,70 @@
 [
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/activity_main.xml",
-        "source": "com.browser.app-main-56:/layout/activity_main.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_suggestion.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_suggestion.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_settings.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_settings.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_settings.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_settings.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_profile.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_profile.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_bookmarks.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_bookmarks.xml"
     },
     {
         "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_history.xml",
         "source": "com.browser.app-main-56:/layout/fragment_history.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_download.xml",
-        "source": "com.browser.app-main-56:/layout/item_download.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/activity_main.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/activity_main.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_window.xml",
-        "source": "com.browser.app-main-56:/layout/item_window.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_quick_link.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_quick_link.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_windows.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_windows.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_bookmark.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_bookmark.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_quick_link.xml",
-        "source": "com.browser.app-main-56:/layout/item_quick_link.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_history.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_history.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_downloads.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_downloads.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_download.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_download.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_bookmarks.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_bookmarks.xml"
+        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_history_header.xml",
+        "source": "com.browser.app-main-56:/layout/item_history_header.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_home.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_home.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_profile.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_profile.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/fragment_webview.xml",
-        "source": "com.browser.app-main-56:/layout/fragment_webview.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_history.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_history.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_bookmark.xml",
-        "source": "com.browser.app-main-56:/layout/item_bookmark.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_home.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_home.xml"
     },
     {
-        "merged": "com.browser.app-mergeDebugResources-53:/layout/item_history.xml",
-        "source": "com.browser.app-main-56:/layout/item_history.xml"
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_webview.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_webview.xml"
+    },
+    {
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_downloads.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_downloads.xml"
+    },
+    {
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/item_window.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/item_window.xml"
+    },
+    {
+        "merged": "/root/.gradle/daemon/8.14.4/com.browser.app-mergeDebugResources-53:/layout/fragment_windows.xml",
+        "source": "/root/.gradle/daemon/8.14.4/com.browser.app-main-56:/layout/fragment_windows.xml"
     }
 ]

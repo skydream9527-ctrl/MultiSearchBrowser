@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.browser.app.R;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import java.lang.NullPointerException;
 import java.lang.Override;
 import java.lang.String;
@@ -34,14 +36,22 @@ public final class FragmentHistoryBinding implements ViewBinding {
   @NonNull
   public final RecyclerView historyList;
 
+  @NonNull
+  public final TextInputEditText searchInput;
+
+  @NonNull
+  public final TextInputLayout searchLayout;
+
   private FragmentHistoryBinding(@NonNull ConstraintLayout rootView, @NonNull ImageButton btnBack,
-      @NonNull TextView emptyText, @NonNull LinearLayout header,
-      @NonNull RecyclerView historyList) {
+      @NonNull TextView emptyText, @NonNull LinearLayout header, @NonNull RecyclerView historyList,
+      @NonNull TextInputEditText searchInput, @NonNull TextInputLayout searchLayout) {
     this.rootView = rootView;
     this.btnBack = btnBack;
     this.emptyText = emptyText;
     this.header = header;
     this.historyList = historyList;
+    this.searchInput = searchInput;
+    this.searchLayout = searchLayout;
   }
 
   @Override
@@ -95,8 +105,20 @@ public final class FragmentHistoryBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.search_input;
+      TextInputEditText searchInput = ViewBindings.findChildViewById(rootView, id);
+      if (searchInput == null) {
+        break missingId;
+      }
+
+      id = R.id.search_layout;
+      TextInputLayout searchLayout = ViewBindings.findChildViewById(rootView, id);
+      if (searchLayout == null) {
+        break missingId;
+      }
+
       return new FragmentHistoryBinding((ConstraintLayout) rootView, btnBack, emptyText, header,
-          historyList);
+          historyList, searchInput, searchLayout);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

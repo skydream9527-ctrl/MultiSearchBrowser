@@ -61,6 +61,10 @@
             android:name="windowId"
             app:argType="long"
             android:defaultValue="0L" />
+        <argument
+            android:name="isIncognito"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 
     <fragment

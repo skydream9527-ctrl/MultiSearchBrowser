@@ -18,7 +18,7 @@ import com.browser.app.data.entity.WindowEntity
         WindowEntity::class,
         DownloadEntity::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = true
 )
 abstract class BrowserDatabase : RoomDatabase() {

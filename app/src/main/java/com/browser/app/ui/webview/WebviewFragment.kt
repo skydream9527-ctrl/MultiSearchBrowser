@@ -52,6 +52,8 @@ class WebviewFragment : Fragment() {
     private var currentTitle: String = ""
     private var isBookmarked = false
     private var useDesktopUA = false
+    /** 当前 tab 是否无痕：决定 WebView 是否走 pool、退出时是否清理缓存 */
+    private var isIncognitoTab = false
 
     /** 文件选择回调（onShowFileChooser 触发） */
     private var pendingFileChooserCallback: android.webkit.ValueCallback<Array<Uri>>? = null
@@ -90,15 +92,17 @@ class WebviewFragment : Fragment() {
         val args = WebviewFragmentArgs.fromBundle(requireArguments())
         val incomingUrl = args.url
         val windowId = args.windowId
+        isIncognitoTab = args.isIncognito
 
-        attachWebView(windowId)
+        attachWebView(windowId, isIncognitoTab)
         setupToolbar()
+        setupFindBar()
         setupErrorRetry()
 
         // 多窗口：windowId > 0 时从 DB 加载已存在的 tab；否则新建一个 tab。
         // 注意：windowId > 0 时 WebView 复用 pool，若之前未加载过 url（首次进入），仍需 loadUrl。
         viewLifecycleOwner.lifecycleScope.launch {
-            val realUrl = viewModel.initTab(windowId, incomingUrl)
+            val realUrl = viewModel.initTab(windowId, incomingUrl, isIncognitoTab)
             currentUrl = realUrl
             observeBookmarkState()
             // 仅当 WebView 当前 url 与目标 url 不同时才加载，避免切 tab 重复刷新
@@ -115,9 +119,14 @@ class WebviewFragment : Fragment() {
     /**
      * 从 WebViewPool 拿到 windowId 对应的 WebView，挂载到容器里。
      * 若 WebView 已经在父容器里（从其他 Fragment 切过来），先 detach 再 attach。
+     * 无痕模式则创建独立 WebView，不走 pool，退出时销毁。
      */
-    private fun attachWebView(windowId: Long) {
-        webView = webViewPool.obtain(windowId)
+    private fun attachWebView(windowId: Long, isIncognito: Boolean) {
+        webView = if (isIncognito) {
+            createIncognitoWebView()
+        } else {
+            webViewPool.obtain(windowId)
+        }
         (webView.parent as? ViewGroup)?.removeView(webView)
         binding.webviewContainer.addView(
             webView,
@@ -131,6 +140,22 @@ class WebviewFragment : Fragment() {
         useDesktopUA = preferenceManager.defaultUserAgent == "desktop"
         webView.settings.userAgentString = if (useDesktopUA) DESKTOP_UA else null
         setupWebview()
+    }
+
+    /** 无痕模式专用 WebView：禁用缓存、关闭 Cookie，退出时整体销毁 */
+    private fun createIncognitoWebView(): WebView {
+        return WebView(requireContext()).apply {
+            settings.apply {
+                javaScriptEnabled = preferenceManager.javaScriptEnabled
+                domStorageEnabled = true
+                databaseEnabled = true
+                loadWithOverviewMode = true
+                useWideViewPort = true
+                cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
+            }
+            CookieManager.getInstance().setAcceptCookie(false)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+        }
     }
 
     private fun setupWebview() {
@@ -159,6 +184,12 @@ class WebviewFragment : Fragment() {
                 updateNavigationButtons()
                 // 同步 Cookie
                 CookieManager.getInstance().flush()
+                // 夜间模式：API < Q 时 forceDark 不可用，回退到 CSS 注入
+                if (preferenceManager.nightMode &&
+                    android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q
+                ) {
+                    view?.let { com.browser.app.webview.DarkModeCssInjector.inject(it) }
+                }
             }
 
             override fun onReceivedError(
@@ -223,6 +254,16 @@ class WebviewFragment : Fragment() {
             }
         }
 
+        // 查找结果回调：通过 WebView.FindListener 接收，更新匹配数显示
+        webView.setFindListener { activeMatchOrdinal, numberOfMatches, isDoneCounting ->
+            // 显示 "第 N / 共 M 处" 匹配
+            binding.findMatchCount.text = if (numberOfMatches > 0) {
+                "${activeMatchOrdinal.coerceAtLeast(1)} / $numberOfMatches"
+            } else {
+                "0 / 0"
+            }
+        }
+
         // 下载：交给系统 DownloadManager
         webView.setDownloadListener { url, _, _, mimetype, _ ->
             handleDownload(url, mimetype)
@@ -271,6 +312,75 @@ class WebviewFragment : Fragment() {
         }
 
         binding.btnBookmark.setOnClickListener { toggleBookmark() }
+        binding.btnFind.setOnClickListener { showFindBar() }
+    }
+
+    // ===== 查找页面（Find in Page） =====
+
+    private fun setupFindBar() {
+        binding.findInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                doFind(forward = true)
+                true
+            } else {
+                false
+            }
+        }
+        // 实时查找：边输入边匹配
+        binding.findInput.addTextChangedListener(
+            object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    val q = s?.toString().orEmpty()
+                    if (q.isNotEmpty()) {
+                        webView.findAllAsync(q)
+                    } else {
+                        // 清空查询：隐藏匹配数
+                        binding.findMatchCount.text = ""
+                        webView.clearMatches()
+                    }
+                }
+            }
+        )
+        binding.btnFindNext.setOnClickListener { doFind(forward = true) }
+        binding.btnFindPrev.setOnClickListener { doFind(forward = false) }
+        binding.btnFindClose.setOnClickListener { hideFindBar() }
+    }
+
+    private fun doFind(forward: Boolean) {
+        val q = binding.findInput.text.toString().trim()
+        if (q.isEmpty()) return
+        // 首次查找用 findAllAsync；后续 findNext 复用上次结果
+        if (lastFindQuery != q) {
+            lastFindQuery = q
+            webView.findAllAsync(q)
+        } else {
+            webView.findNext(forward)
+        }
+    }
+
+    private var lastFindQuery: String = ""
+
+    private fun showFindBar() {
+        binding.findBar.visibility = View.VISIBLE
+        binding.findInput.requestFocus()
+        binding.findInput.setSelection(binding.findInput.text.length)
+        val imm = requireContext()
+            .getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(binding.findInput, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideFindBar() {
+        binding.findBar.visibility = View.GONE
+        // 退出查找：清除高亮
+        webView.clearMatches()
+        lastFindQuery = ""
+        binding.findMatchCount.text = ""
+        // 收起软键盘
+        val imm = requireContext()
+            .getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(binding.findInput.windowToken, 0)
     }
 
     private fun setupErrorRetry() {
@@ -446,10 +556,20 @@ class WebviewFragment : Fragment() {
         // 取消未完成的文件选择回调，防止 WebView 卡死
         pendingFileChooserCallback?.onReceiveValue(null)
         pendingFileChooserCallback = null
+        // 解绑查找监听：避免 TextWatcher 持有已 destroy 的 binding
+        binding.findInput.addTextChangedListener(null)
         // 解绑客户端回调：避免切回时回调持有已 destroy 的 binding
         webView.setDownloadListener(null)
-        // 从容器移除 WebView，但不 destroy —— 它由 WebViewPool 统一管理生命周期
+        // 从容器移除 WebView
         (webView.parent as? ViewGroup)?.removeView(webView)
+        if (isIncognitoTab) {
+            // 无痕模式：销毁 WebView 并清理所有缓存/Cookie，不留痕迹
+            webView.clearCache(true)
+            webView.clearHistory()
+            android.webkit.CookieManager.getInstance().removeAllCookies(null)
+            android.webkit.WebStorage.getInstance().deleteAllData()
+            webView.destroy()
+        }
         binding.swipeRefresh.setOnRefreshListener(null)
         super.onDestroyView()
         _binding = null

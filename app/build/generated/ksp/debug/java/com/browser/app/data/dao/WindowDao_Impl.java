@@ -50,7 +50,7 @@ public final class WindowDao_Impl implements WindowDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `windows` (`id`,`title`,`url`,`timestamp`) VALUES (nullif(?, 0),?,?,?)";
+        return "INSERT OR REPLACE INTO `windows` (`id`,`title`,`url`,`timestamp`,`isIncognito`) VALUES (nullif(?, 0),?,?,?,?)";
       }
 
       @Override
@@ -60,6 +60,8 @@ public final class WindowDao_Impl implements WindowDao {
         statement.bindString(2, entity.getTitle());
         statement.bindString(3, entity.getUrl());
         statement.bindLong(4, entity.getTimestamp());
+        final int _tmp = entity.isIncognito() ? 1 : 0;
+        statement.bindLong(5, _tmp);
       }
     };
     this.__deletionAdapterOfWindowEntity = new EntityDeletionOrUpdateAdapter<WindowEntity>(__db) {
@@ -79,7 +81,7 @@ public final class WindowDao_Impl implements WindowDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `windows` SET `id` = ?,`title` = ?,`url` = ?,`timestamp` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `windows` SET `id` = ?,`title` = ?,`url` = ?,`timestamp` = ?,`isIncognito` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -89,7 +91,9 @@ public final class WindowDao_Impl implements WindowDao {
         statement.bindString(2, entity.getTitle());
         statement.bindString(3, entity.getUrl());
         statement.bindLong(4, entity.getTimestamp());
-        statement.bindLong(5, entity.getId());
+        final int _tmp = entity.isIncognito() ? 1 : 0;
+        statement.bindLong(5, _tmp);
+        statement.bindLong(6, entity.getId());
       }
     };
     this.__preparedStmtOfDeleteById = new SharedSQLiteStatement(__db) {
@@ -195,6 +199,7 @@ public final class WindowDao_Impl implements WindowDao {
           final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
           final int _cursorIndexOfUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "url");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
+          final int _cursorIndexOfIsIncognito = CursorUtil.getColumnIndexOrThrow(_cursor, "isIncognito");
           final List<WindowEntity> _result = new ArrayList<WindowEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final WindowEntity _item;
@@ -206,7 +211,11 @@ public final class WindowDao_Impl implements WindowDao {
             _tmpUrl = _cursor.getString(_cursorIndexOfUrl);
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _item = new WindowEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp);
+            final boolean _tmpIsIncognito;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfIsIncognito);
+            _tmpIsIncognito = _tmp != 0;
+            _item = new WindowEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpIsIncognito);
             _result.add(_item);
           }
           return _result;
@@ -239,6 +248,7 @@ public final class WindowDao_Impl implements WindowDao {
           final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
           final int _cursorIndexOfUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "url");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
+          final int _cursorIndexOfIsIncognito = CursorUtil.getColumnIndexOrThrow(_cursor, "isIncognito");
           final WindowEntity _result;
           if (_cursor.moveToFirst()) {
             final long _tmpId;
@@ -249,7 +259,11 @@ public final class WindowDao_Impl implements WindowDao {
             _tmpUrl = _cursor.getString(_cursorIndexOfUrl);
             final long _tmpTimestamp;
             _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
-            _result = new WindowEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp);
+            final boolean _tmpIsIncognito;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfIsIncognito);
+            _tmpIsIncognito = _tmp != 0;
+            _result = new WindowEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpIsIncognito);
           } else {
             _result = null;
           }

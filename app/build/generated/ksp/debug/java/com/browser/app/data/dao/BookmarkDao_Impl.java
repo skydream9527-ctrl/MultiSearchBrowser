@@ -39,7 +39,11 @@ public final class BookmarkDao_Impl implements BookmarkDao {
 
   private final EntityDeletionOrUpdateAdapter<BookmarkEntity> __deletionAdapterOfBookmarkEntity;
 
+  private final EntityDeletionOrUpdateAdapter<BookmarkEntity> __updateAdapterOfBookmarkEntity;
+
   private final SharedSQLiteStatement __preparedStmtOfDeleteByUrl;
+
+  private final SharedSQLiteStatement __preparedStmtOfMoveFolder;
 
   public BookmarkDao_Impl(@NonNull final RoomDatabase __db) {
     this.__db = __db;
@@ -47,7 +51,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `bookmarks` (`id`,`title`,`url`,`timestamp`,`faviconUrl`) VALUES (nullif(?, 0),?,?,?,?)";
+        return "INSERT OR REPLACE INTO `bookmarks` (`id`,`title`,`url`,`timestamp`,`faviconUrl`,`folder`) VALUES (nullif(?, 0),?,?,?,?,?)";
       }
 
       @Override
@@ -62,6 +66,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
         } else {
           statement.bindString(5, entity.getFaviconUrl());
         }
+        statement.bindString(6, entity.getFolder());
       }
     };
     this.__deletionAdapterOfBookmarkEntity = new EntityDeletionOrUpdateAdapter<BookmarkEntity>(__db) {
@@ -77,11 +82,42 @@ public final class BookmarkDao_Impl implements BookmarkDao {
         statement.bindLong(1, entity.getId());
       }
     };
+    this.__updateAdapterOfBookmarkEntity = new EntityDeletionOrUpdateAdapter<BookmarkEntity>(__db) {
+      @Override
+      @NonNull
+      protected String createQuery() {
+        return "UPDATE OR ABORT `bookmarks` SET `id` = ?,`title` = ?,`url` = ?,`timestamp` = ?,`faviconUrl` = ?,`folder` = ? WHERE `id` = ?";
+      }
+
+      @Override
+      protected void bind(@NonNull final SupportSQLiteStatement statement,
+          @NonNull final BookmarkEntity entity) {
+        statement.bindLong(1, entity.getId());
+        statement.bindString(2, entity.getTitle());
+        statement.bindString(3, entity.getUrl());
+        statement.bindLong(4, entity.getTimestamp());
+        if (entity.getFaviconUrl() == null) {
+          statement.bindNull(5);
+        } else {
+          statement.bindString(5, entity.getFaviconUrl());
+        }
+        statement.bindString(6, entity.getFolder());
+        statement.bindLong(7, entity.getId());
+      }
+    };
     this.__preparedStmtOfDeleteByUrl = new SharedSQLiteStatement(__db) {
       @Override
       @NonNull
       public String createQuery() {
         final String _query = "DELETE FROM bookmarks WHERE url = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfMoveFolder = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "UPDATE bookmarks SET folder = ? WHERE id = ?";
         return _query;
       }
     };
@@ -126,6 +162,25 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   }
 
   @Override
+  public Object update(final BookmarkEntity bookmark,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __updateAdapterOfBookmarkEntity.handle(bookmark);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object deleteByUrl(final String url, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
@@ -151,6 +206,34 @@ public final class BookmarkDao_Impl implements BookmarkDao {
   }
 
   @Override
+  public Object moveFolder(final long id, final String folder,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfMoveFolder.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, folder);
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, id);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfMoveFolder.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<List<BookmarkEntity>> getAllBookmarks() {
     final String _sql = "SELECT * FROM bookmarks ORDER BY timestamp DESC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
@@ -165,6 +248,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           final int _cursorIndexOfUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "url");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
           final int _cursorIndexOfFaviconUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "faviconUrl");
+          final int _cursorIndexOfFolder = CursorUtil.getColumnIndexOrThrow(_cursor, "folder");
           final List<BookmarkEntity> _result = new ArrayList<BookmarkEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final BookmarkEntity _item;
@@ -182,7 +266,9 @@ public final class BookmarkDao_Impl implements BookmarkDao {
             } else {
               _tmpFaviconUrl = _cursor.getString(_cursorIndexOfFaviconUrl);
             }
-            _item = new BookmarkEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpFaviconUrl);
+            final String _tmpFolder;
+            _tmpFolder = _cursor.getString(_cursorIndexOfFolder);
+            _item = new BookmarkEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpFaviconUrl,_tmpFolder);
             _result.add(_item);
           }
           return _result;
@@ -216,6 +302,7 @@ public final class BookmarkDao_Impl implements BookmarkDao {
           final int _cursorIndexOfUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "url");
           final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
           final int _cursorIndexOfFaviconUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "faviconUrl");
+          final int _cursorIndexOfFolder = CursorUtil.getColumnIndexOrThrow(_cursor, "folder");
           final BookmarkEntity _result;
           if (_cursor.moveToFirst()) {
             final long _tmpId;
@@ -232,7 +319,9 @@ public final class BookmarkDao_Impl implements BookmarkDao {
             } else {
               _tmpFaviconUrl = _cursor.getString(_cursorIndexOfFaviconUrl);
             }
-            _result = new BookmarkEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpFaviconUrl);
+            final String _tmpFolder;
+            _tmpFolder = _cursor.getString(_cursorIndexOfFolder);
+            _result = new BookmarkEntity(_tmpId,_tmpTitle,_tmpUrl,_tmpTimestamp,_tmpFaviconUrl,_tmpFolder);
           } else {
             _result = null;
           }
@@ -243,6 +332,35 @@ public final class BookmarkDao_Impl implements BookmarkDao {
         }
       }
     }, $completion);
+  }
+
+  @Override
+  public Flow<List<String>> observeFolders() {
+    final String _sql = "SELECT DISTINCT folder FROM bookmarks WHERE folder != '' ORDER BY folder";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    return CoroutinesRoom.createFlow(__db, false, new String[] {"bookmarks"}, new Callable<List<String>>() {
+      @Override
+      @NonNull
+      public List<String> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final List<String> _result = new ArrayList<String>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final String _item;
+            _item = _cursor.getString(0);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+        }
+      }
+
+      @Override
+      protected void finalize() {
+        _statement.release();
+      }
+    });
   }
 
   @Override

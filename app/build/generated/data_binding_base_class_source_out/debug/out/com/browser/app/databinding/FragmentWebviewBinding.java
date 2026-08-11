@@ -33,6 +33,18 @@ public final class FragmentWebviewBinding implements ViewBinding {
   public final ImageButton btnBookmark;
 
   @NonNull
+  public final ImageButton btnFind;
+
+  @NonNull
+  public final ImageButton btnFindClose;
+
+  @NonNull
+  public final ImageButton btnFindNext;
+
+  @NonNull
+  public final ImageButton btnFindPrev;
+
+  @NonNull
   public final ImageButton btnForward;
 
   @NonNull
@@ -51,6 +63,15 @@ public final class FragmentWebviewBinding implements ViewBinding {
   public final TextView errorTitle;
 
   @NonNull
+  public final LinearLayout findBar;
+
+  @NonNull
+  public final EditText findInput;
+
+  @NonNull
+  public final TextView findMatchCount;
+
+  @NonNull
   public final ProgressBar progressBar;
 
   @NonNull
@@ -66,21 +87,31 @@ public final class FragmentWebviewBinding implements ViewBinding {
   public final FrameLayout webviewContainer;
 
   private FragmentWebviewBinding(@NonNull ConstraintLayout rootView, @NonNull ImageButton btnBack,
-      @NonNull ImageButton btnBookmark, @NonNull ImageButton btnForward,
+      @NonNull ImageButton btnBookmark, @NonNull ImageButton btnFind,
+      @NonNull ImageButton btnFindClose, @NonNull ImageButton btnFindNext,
+      @NonNull ImageButton btnFindPrev, @NonNull ImageButton btnForward,
       @NonNull ImageButton btnRefresh, @NonNull Button btnRetry, @NonNull LinearLayout errorLayout,
-      @NonNull TextView errorMessage, @NonNull TextView errorTitle,
+      @NonNull TextView errorMessage, @NonNull TextView errorTitle, @NonNull LinearLayout findBar,
+      @NonNull EditText findInput, @NonNull TextView findMatchCount,
       @NonNull ProgressBar progressBar, @NonNull SwipeRefreshLayout swipeRefresh,
       @NonNull LinearLayout toolbar, @NonNull EditText urlBar,
       @NonNull FrameLayout webviewContainer) {
     this.rootView = rootView;
     this.btnBack = btnBack;
     this.btnBookmark = btnBookmark;
+    this.btnFind = btnFind;
+    this.btnFindClose = btnFindClose;
+    this.btnFindNext = btnFindNext;
+    this.btnFindPrev = btnFindPrev;
     this.btnForward = btnForward;
     this.btnRefresh = btnRefresh;
     this.btnRetry = btnRetry;
     this.errorLayout = errorLayout;
     this.errorMessage = errorMessage;
     this.errorTitle = errorTitle;
+    this.findBar = findBar;
+    this.findInput = findInput;
+    this.findMatchCount = findMatchCount;
     this.progressBar = progressBar;
     this.swipeRefresh = swipeRefresh;
     this.toolbar = toolbar;
@@ -127,6 +158,30 @@ public final class FragmentWebviewBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btn_find;
+      ImageButton btnFind = ViewBindings.findChildViewById(rootView, id);
+      if (btnFind == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_find_close;
+      ImageButton btnFindClose = ViewBindings.findChildViewById(rootView, id);
+      if (btnFindClose == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_find_next;
+      ImageButton btnFindNext = ViewBindings.findChildViewById(rootView, id);
+      if (btnFindNext == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_find_prev;
+      ImageButton btnFindPrev = ViewBindings.findChildViewById(rootView, id);
+      if (btnFindPrev == null) {
+        break missingId;
+      }
+
       id = R.id.btn_forward;
       ImageButton btnForward = ViewBindings.findChildViewById(rootView, id);
       if (btnForward == null) {
@@ -163,6 +218,24 @@ public final class FragmentWebviewBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.find_bar;
+      LinearLayout findBar = ViewBindings.findChildViewById(rootView, id);
+      if (findBar == null) {
+        break missingId;
+      }
+
+      id = R.id.find_input;
+      EditText findInput = ViewBindings.findChildViewById(rootView, id);
+      if (findInput == null) {
+        break missingId;
+      }
+
+      id = R.id.find_match_count;
+      TextView findMatchCount = ViewBindings.findChildViewById(rootView, id);
+      if (findMatchCount == null) {
+        break missingId;
+      }
+
       id = R.id.progress_bar;
       ProgressBar progressBar = ViewBindings.findChildViewById(rootView, id);
       if (progressBar == null) {
@@ -193,9 +266,10 @@ public final class FragmentWebviewBinding implements ViewBinding {
         break missingId;
       }
 
-      return new FragmentWebviewBinding((ConstraintLayout) rootView, btnBack, btnBookmark,
-          btnForward, btnRefresh, btnRetry, errorLayout, errorMessage, errorTitle, progressBar,
-          swipeRefresh, toolbar, urlBar, webviewContainer);
+      return new FragmentWebviewBinding((ConstraintLayout) rootView, btnBack, btnBookmark, btnFind,
+          btnFindClose, btnFindNext, btnFindPrev, btnForward, btnRefresh, btnRetry, errorLayout,
+          errorMessage, errorTitle, findBar, findInput, findMatchCount, progressBar, swipeRefresh,
+          toolbar, urlBar, webviewContainer);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -4,6 +4,7 @@ package com.browser.app.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.browser.app.R;
+import com.google.android.material.chip.ChipGroup;
 import java.lang.NullPointerException;
 import java.lang.Override;
 import java.lang.String;
@@ -32,15 +34,24 @@ public final class FragmentBookmarksBinding implements ViewBinding {
   public final TextView emptyText;
 
   @NonNull
+  public final ChipGroup folderChips;
+
+  @NonNull
+  public final HorizontalScrollView folderChipsScroll;
+
+  @NonNull
   public final LinearLayout header;
 
   private FragmentBookmarksBinding(@NonNull ConstraintLayout rootView,
       @NonNull RecyclerView bookmarksList, @NonNull ImageButton btnBack,
-      @NonNull TextView emptyText, @NonNull LinearLayout header) {
+      @NonNull TextView emptyText, @NonNull ChipGroup folderChips,
+      @NonNull HorizontalScrollView folderChipsScroll, @NonNull LinearLayout header) {
     this.rootView = rootView;
     this.bookmarksList = bookmarksList;
     this.btnBack = btnBack;
     this.emptyText = emptyText;
+    this.folderChips = folderChips;
+    this.folderChipsScroll = folderChipsScroll;
     this.header = header;
   }
 
@@ -89,6 +100,18 @@ public final class FragmentBookmarksBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.folder_chips;
+      ChipGroup folderChips = ViewBindings.findChildViewById(rootView, id);
+      if (folderChips == null) {
+        break missingId;
+      }
+
+      id = R.id.folder_chips_scroll;
+      HorizontalScrollView folderChipsScroll = ViewBindings.findChildViewById(rootView, id);
+      if (folderChipsScroll == null) {
+        break missingId;
+      }
+
       id = R.id.header;
       LinearLayout header = ViewBindings.findChildViewById(rootView, id);
       if (header == null) {
@@ -96,7 +119,7 @@ public final class FragmentBookmarksBinding implements ViewBinding {
       }
 
       return new FragmentBookmarksBinding((ConstraintLayout) rootView, bookmarksList, btnBack,
-          emptyText, header);
+          emptyText, folderChips, folderChipsScroll, header);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

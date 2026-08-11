@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavArgs
 import java.lang.IllegalArgumentException
+import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
 import kotlin.jvm.JvmStatic
@@ -11,11 +12,13 @@ import kotlin.jvm.JvmStatic
 public data class WebviewFragmentArgs(
   public val url: String,
   public val windowId: Long = 0L,
+  public val isIncognito: Boolean = false,
 ) : NavArgs {
   public fun toBundle(): Bundle {
     val result = Bundle()
     result.putString("url", this.url)
     result.putLong("windowId", this.windowId)
+    result.putBoolean("isIncognito", this.isIncognito)
     return result
   }
 
@@ -23,6 +26,7 @@ public data class WebviewFragmentArgs(
     val result = SavedStateHandle()
     result.set("url", this.url)
     result.set("windowId", this.windowId)
+    result.set("isIncognito", this.isIncognito)
     return result
   }
 
@@ -45,7 +49,13 @@ public data class WebviewFragmentArgs(
       } else {
         __windowId = 0L
       }
-      return WebviewFragmentArgs(__url, __windowId)
+      val __isIncognito : Boolean
+      if (bundle.containsKey("isIncognito")) {
+        __isIncognito = bundle.getBoolean("isIncognito")
+      } else {
+        __isIncognito = false
+      }
+      return WebviewFragmentArgs(__url, __windowId, __isIncognito)
     }
 
     @JvmStatic
@@ -68,7 +78,16 @@ public data class WebviewFragmentArgs(
       } else {
         __windowId = 0L
       }
-      return WebviewFragmentArgs(__url, __windowId)
+      val __isIncognito : Boolean?
+      if (savedStateHandle.contains("isIncognito")) {
+        __isIncognito = savedStateHandle["isIncognito"]
+        if (__isIncognito == null) {
+          throw IllegalArgumentException("Argument \"isIncognito\" of type boolean does not support null values")
+        }
+      } else {
+        __isIncognito = false
+      }
+      return WebviewFragmentArgs(__url, __windowId, __isIncognito)
     }
   }
 }

@@ -23,4 +23,7 @@ class HistoryRepository @Inject constructor(private val historyDao: HistoryDao) 
     suspend fun clearHistory() = historyDao.deleteAll()
 
     fun getCount(): Flow<Int> = historyDao.getCount()
+
+    suspend fun searchHistory(query: String): List<HistoryEntity> =
+        if (query.isBlank()) emptyList() else historyDao.searchHistory(query)
 }

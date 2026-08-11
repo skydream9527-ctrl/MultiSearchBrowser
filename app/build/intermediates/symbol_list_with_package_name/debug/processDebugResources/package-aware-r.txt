@@ -3088,6 +3088,7 @@ drawable ic_clock_black_24dp
 drawable ic_close
 drawable ic_history
 drawable ic_home
+drawable ic_incognito
 drawable ic_keyboard_black_24dp
 drawable ic_launcher_foreground
 drawable ic_m3_chip_check
@@ -3261,6 +3262,7 @@ id action_windowsFragment_to_webviewFragment
 id actions
 id activity_chooser_view_content
 id add
+id add_incognito_btn
 id add_window_btn
 id alertTitle
 id aligned
@@ -3299,6 +3301,10 @@ id bounceStart
 id btn_back
 id btn_bookmark
 id btn_clear_data
+id btn_find
+id btn_find_close
+id btn_find_next
+id btn_find_prev
 id btn_forward
 id btn_refresh
 id btn_retry
@@ -3327,6 +3333,8 @@ id clockwise
 id close_btn
 id closest
 id collapseActionView
+id common_sites
+id common_sites_label
 id compress
 id confirm_button
 id constraint
@@ -3406,6 +3414,9 @@ id fill
 id fill_horizontal
 id fill_vertical
 id filled
+id find_bar
+id find_input
+id find_match_count
 id fitCenter
 id fitEnd
 id fitStart
@@ -3414,6 +3425,8 @@ id fitXY
 id fixed
 id flip
 id floating
+id folder_chips
+id folder_chips_scroll
 id forever
 id fragment_container_view_tag
 id frost
@@ -3622,6 +3635,7 @@ id search_close_btn
 id search_edit_frame
 id search_go_btn
 id search_input
+id search_layout
 id search_mag_icon
 id search_plate
 id search_src_text
@@ -3672,6 +3686,9 @@ id stop
 id stretch
 id submenuarrow
 id submit_area
+id suggestion_icon
+id suggestion_text
+id suggestions_list
 id supportScrollUp
 id sw_block_mixed
 id sw_cookie
@@ -3919,7 +3936,9 @@ layout ime_secondary_split_test_activity
 layout item_bookmark
 layout item_download
 layout item_history
+layout item_history_header
 layout item_quick_link
+layout item_suggestion
 layout item_window
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
@@ -4020,6 +4039,12 @@ string appbar_scrolling_view_behavior
 string avatar_title
 string avatar_uploaded
 string bookmark_added
+string bookmark_edit_folder
+string bookmark_edit_folder_hint
+string bookmark_edit_name
+string bookmark_edit_title
+string bookmark_folder_all
+string bookmark_folder_unfiled
 string bookmark_removed
 string bookmarks_title
 string bottom_sheet_behavior
@@ -4049,6 +4074,7 @@ string dialog_delete_bookmark_message
 string dialog_delete_bookmark_title
 string dialog_delete_history_message
 string dialog_delete_history_title
+string dialog_save
 string downloads_delete
 string downloads_delete_message
 string downloads_empty
@@ -4067,11 +4093,20 @@ string error_loading
 string exposed_dropdown_menu_content_description
 string fab_transformation_scrim_behavior
 string fab_transformation_sheet_behavior
+string find_close
+string find_in_page
+string find_next
+string find_prev
 string hide_bottom_view_on_scroll_behavior
+string history_group_today
+string history_group_yesterday
+string history_search_hint
 string history_title
+string home_common_sites
 string home_quick_links
 string home_select_engine
 string icon_content_description
+string incognito_hint
 string item_view_role_description
 string loading
 string m3_exceed_max_badge_text_suffix
@@ -4176,6 +4211,7 @@ string mtrl_timepicker_cancel
 string mtrl_timepicker_confirm
 string nav_app_bar_navigate_up_description
 string nav_app_bar_open_drawer_description
+string new_incognito_window
 string new_window
 string no_bookmarks
 string no_history
@@ -4218,6 +4254,14 @@ string settings_section_privacy
 string settings_title
 string side_sheet_accessibility_pane_title
 string side_sheet_behavior
+string site_bilibili
+string site_douyin
+string site_github
+string site_jd
+string site_taobao
+string site_weibo
+string site_wikipedia
+string site_zhihu
 string status_bar_notification_info_overflow
 string tab_back
 string tab_home

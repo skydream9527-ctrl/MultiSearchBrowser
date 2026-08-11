@@ -46,5 +46,23 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /** v3 -> v4：windows 表新增 isIncognito 列（无痕 tab 标识） */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "ALTER TABLE windows ADD COLUMN isIncognito INTEGER NOT NULL DEFAULT 0"
+            )
+        }
+    }
+
+    /** v4 -> v5：bookmarks 表新增 folder 列（收藏分组） */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "ALTER TABLE bookmarks ADD COLUMN folder TEXT NOT NULL DEFAULT ''"
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

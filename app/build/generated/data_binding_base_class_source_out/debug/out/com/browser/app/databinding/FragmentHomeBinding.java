@@ -29,6 +29,12 @@ public final class FragmentHomeBinding implements ViewBinding {
   public final HorizontalScrollView chipsScroll;
 
   @NonNull
+  public final RecyclerView commonSites;
+
+  @NonNull
+  public final TextView commonSitesLabel;
+
+  @NonNull
   public final ChipGroup engineChips;
 
   @NonNull
@@ -49,13 +55,20 @@ public final class FragmentHomeBinding implements ViewBinding {
   @NonNull
   public final EditText searchInput;
 
+  @NonNull
+  public final RecyclerView suggestionsList;
+
   private FragmentHomeBinding(@NonNull ConstraintLayout rootView,
-      @NonNull HorizontalScrollView chipsScroll, @NonNull ChipGroup engineChips,
+      @NonNull HorizontalScrollView chipsScroll, @NonNull RecyclerView commonSites,
+      @NonNull TextView commonSitesLabel, @NonNull ChipGroup engineChips,
       @NonNull TextView engineLabel, @NonNull LinearLayout headerContainer,
       @NonNull RecyclerView quickLinks, @NonNull TextView quickLinksLabel,
-      @NonNull ImageButton searchButton, @NonNull EditText searchInput) {
+      @NonNull ImageButton searchButton, @NonNull EditText searchInput,
+      @NonNull RecyclerView suggestionsList) {
     this.rootView = rootView;
     this.chipsScroll = chipsScroll;
+    this.commonSites = commonSites;
+    this.commonSitesLabel = commonSitesLabel;
     this.engineChips = engineChips;
     this.engineLabel = engineLabel;
     this.headerContainer = headerContainer;
@@ -63,6 +76,7 @@ public final class FragmentHomeBinding implements ViewBinding {
     this.quickLinksLabel = quickLinksLabel;
     this.searchButton = searchButton;
     this.searchInput = searchInput;
+    this.suggestionsList = suggestionsList;
   }
 
   @Override
@@ -95,6 +109,18 @@ public final class FragmentHomeBinding implements ViewBinding {
       id = R.id.chips_scroll;
       HorizontalScrollView chipsScroll = ViewBindings.findChildViewById(rootView, id);
       if (chipsScroll == null) {
+        break missingId;
+      }
+
+      id = R.id.common_sites;
+      RecyclerView commonSites = ViewBindings.findChildViewById(rootView, id);
+      if (commonSites == null) {
+        break missingId;
+      }
+
+      id = R.id.common_sites_label;
+      TextView commonSitesLabel = ViewBindings.findChildViewById(rootView, id);
+      if (commonSitesLabel == null) {
         break missingId;
       }
 
@@ -140,8 +166,15 @@ public final class FragmentHomeBinding implements ViewBinding {
         break missingId;
       }
 
-      return new FragmentHomeBinding((ConstraintLayout) rootView, chipsScroll, engineChips,
-          engineLabel, headerContainer, quickLinks, quickLinksLabel, searchButton, searchInput);
+      id = R.id.suggestions_list;
+      RecyclerView suggestionsList = ViewBindings.findChildViewById(rootView, id);
+      if (suggestionsList == null) {
+        break missingId;
+      }
+
+      return new FragmentHomeBinding((ConstraintLayout) rootView, chipsScroll, commonSites,
+          commonSitesLabel, engineChips, engineLabel, headerContainer, quickLinks, quickLinksLabel,
+          searchButton, searchInput, suggestionsList);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

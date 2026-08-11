@@ -45,6 +45,16 @@
             android:tint="@color/primary"
             android:contentDescription="@string/new_window" />
 
+        <ImageButton
+            android:id="@+id/add_incognito_btn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_incognito"
+            android:background="@drawable/circle_button_bg"
+            android:tint="@color/gray"
+            android:contentDescription="@string/new_incognito_window" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
