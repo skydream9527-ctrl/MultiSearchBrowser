@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MultiSearch Browser · Web 版</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ============ 首页 ============ -->
+        <section id="page-home" class="page active">
+            <header class="home-header">
+                <h1>搜索浏览器</h1>
+                <div class="search-bar">
+                    <input id="search-input" type="text" placeholder="输入搜索内容" autocomplete="off">
+                    <button id="search-btn" aria-label="搜索">🔍</button>
+                </div>
+            </header>
+
+            <div class="container">
+                <div class="section-label">选择搜索引擎</div>
+                <div id="engine-chips" class="chips"></div>
+
+                <div class="section-label">快捷入口</div>
+                <div id="quick-links" class="quick-links"></div>
+            </div>
+        </section>
+
+        <!-- ============ 多窗口 ============ -->
+        <section id="page-windows" class="page">
+            <header class="page-header">
+                <h2>多窗口</h2>
+                <span id="window-count" class="count">0 个窗口</span>
+                <button id="add-window-btn" class="icon-btn" aria-label="新建窗口">＋</button>
+            </header>
+            <div id="windows-list" class="list"></div>
+            <div id="windows-empty" class="empty-state" hidden>
+                暂无窗口<br>点击右上角添加新窗口
+            </div>
+        </section>
+
+        <!-- ============ WebView ============ -->
+        <section id="page-webview" class="page">
+            <header class="webview-toolbar">
+                <button id="wv-back" class="icon-btn" aria-label="返回">←</button>
+                <input id="wv-url" type="text" placeholder="输入网址或搜索词" autocomplete="off">
+                <button id="wv-bookmark" class="icon-btn" aria-label="收藏">☆</button>
+                <button id="wv-refresh" class="icon-btn" aria-label="刷新">⟳</button>
+                <button id="wv-open-external" class="icon-btn" aria-label="在新标签页打开">↗</button>
+            </header>
+            <div id="wv-progress" class="progress-bar" hidden></div>
+            <div class="webview-body">
+                <iframe id="wv-frame" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                <div id="wv-fallback" class="webview-fallback" hidden>
+                    <p>🚫 该站点拒绝了内嵌显示（X-Frame-Options / CSP）</p>
+                    <p class="muted">这是浏览器安全策略，非本项目 bug。</p>
+                    <a id="wv-fallback-link" href="#" target="_blank" rel="noopener" class="btn-primary">在新标签页中打开</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 我的 ============ -->
+        <section id="page-profile" class="page">
+            <header class="page-header">
+                <h2>我的</h2>
+            </header>
+            <div class="container">
+                <div class="card avatar-section">
+                    <img id="avatar-img" class="avatar" alt="头像">
+                    <label for="avatar-input" class="upload-label">上传头像</label>
+                    <input id="avatar-input" type="file" accept="image/*" hidden>
+                </div>
+
+                <div class="card list-item" data-action="history">
+                    <span class="icon">📜</span>
+                    <span class="title">浏览历史</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="bookmarks">
+                    <span class="icon">🔖</span>
+                    <span class="title">收藏内容</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="settings">
+                    <span class="icon">⚙️</span>
+                    <span class="title">设置</span>
+                    <span class="arrow">›</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 历史列表 ============ -->
+        <section id="page-history" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>浏览历史</h2>
+                <button id="clear-history-btn" class="text-btn">清空</button>
+            </header>
+            <div id="history-list" class="list"></div>
+            <div id="history-empty" class="empty-state" hidden>暂无浏览历史</div>
+        </section>
+
+        <!-- ============ 书签列表 ============ -->
+        <section id="page-bookmarks" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>收藏内容</h2>
+            </header>
+            <div id="bookmarks-list" class="list"></div>
+            <div id="bookmarks-empty" class="empty-state" hidden>暂无收藏内容</div>
+        </section>
+
+        <!-- ============ 底部导航 ============ -->
+        <nav class="bottom-nav">
+            <button class="tab active" data-tab="home">
+                <span class="tab-icon">🏠</span>
+                <span class="tab-text">首页</span>
+            </button>
+            <button class="tab" data-tab="windows">
+                <span class="tab-icon">🗂</span>
+                <span class="tab-text">多窗口</span>
+            </button>
+            <button class="tab" data-tab="back">
+                <span class="tab-icon">⬅</span>
+                <span class="tab-text">返回</span>
+            </button>
+            <button class="tab" data-tab="profile">
+                <span class="tab-icon">👤</span>
+                <span class="tab-text">我的</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="modal" class="modal" hidden>
+        <div class="modal-content">
+            <h3 id="modal-title">确认</h3>
+            <p id="modal-message"></p>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="text-btn">取消</button>
+                <button id="modal-ok" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
