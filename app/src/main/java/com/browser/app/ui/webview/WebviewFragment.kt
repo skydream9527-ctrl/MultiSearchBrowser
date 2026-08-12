@@ -261,8 +261,9 @@ class WebviewFragment : Fragment() {
             val added = bookmarkRepository.toggleBookmark(currentTitle, currentUrl)
             isBookmarked = added
             updateBookmarkIcon()
-            val message = if (added) "已添加收藏" else "已取消收藏"
-            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
+            val msgRes = if (added) com.browser.app.R.string.bookmark_added
+                else com.browser.app.R.string.bookmark_removed
+            android.widget.Toast.makeText(requireContext(), msgRes, android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 

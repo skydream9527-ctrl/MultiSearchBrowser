@@ -61,7 +61,7 @@
         android:id="@+id/empty_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="暂无窗口\n点击右上角添加新窗口"
+        android:text="@string/empty_windows"
         android:textSize="16sp"
         android:textColor="@color/text_secondary"
         android:gravity="center"

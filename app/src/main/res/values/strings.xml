@@ -27,4 +27,24 @@
     <string name="search_engine_bing">必应</string>
     <string name="search_engine_doubao">豆包</string>
     <string name="search_engine_qianwen">千问</string>
+    <string name="bookmark_added">已添加收藏</string>
+    <string name="bookmark_removed">已取消收藏</string>
+    <string name="input_search_query">请输入搜索内容</string>
+    <string name="select_search_engine">选择搜索引擎</string>
+    <string name="quick_links">快捷入口</string>
+    <string name="settings">设置</string>
+    <string name="settings_coming_soon">设置功能即将上线</string>
+    <string name="storage_permission_required">需要存储权限才能上传头像</string>
+    <string name="no_title">无标题</string>
+    <string name="new_window_default_title">新窗口</string>
+    <string name="window_count_format">%1$d 个窗口</string>
+    <string name="empty_windows">暂无窗口\n点击右上角添加新窗口</string>
+    <string name="delete_record">删除记录</string>
+    <string name="confirm_delete_record">确定要删除这条记录吗？</string>
+    <string name="delete_bookmark">删除收藏</string>
+    <string name="confirm_delete_bookmark">确定要删除这个收藏吗？</string>
+    <string name="clear_history_confirm">确定要清空所有浏览历史吗？此操作不可撤销。</string>
+    <string name="action_clear">清空</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
 </resources>

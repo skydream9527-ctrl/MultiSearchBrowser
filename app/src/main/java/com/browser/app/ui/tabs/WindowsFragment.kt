@@ -4,11 +4,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.browser.app.R
 import com.browser.app.data.BrowserDatabase
@@ -66,7 +67,7 @@ class WindowsFragment : Fragment() {
                 adapter.submitList(windows)
                 binding.emptyText.visibility = if (windows.isEmpty()) View.VISIBLE else View.GONE
                 // 窗口数由列表派生，避免之前同时订阅两个 Flow 的浪费
-                binding.windowCount.text = "${windows.size} 个窗口"
+                binding.windowCount.text = getString(R.string.window_count_format, windows.size)
             }
         }
     }
@@ -75,7 +76,10 @@ class WindowsFragment : Fragment() {
         binding.addWindowBtn.setOnClickListener {
             // 新建窗口：先入库拿到 id，再带 id 跳 webview
             viewLifecycleOwner.lifecycleScope.launch {
-                val id = windowRepository.addWindow(title = "新窗口", url = "https://www.baidu.com")
+                val id = windowRepository.addWindow(
+                    title = getString(R.string.new_window_default_title),
+                    url = "https://www.baidu.com"
+                )
                 findNavController().navigateToWebview("https://www.baidu.com", id)
             }
         }
@@ -90,14 +94,7 @@ class WindowsFragment : Fragment() {
 class WindowAdapter(
     private val onItemClick: (WindowEntity) -> Unit,
     private val onCloseClick: (WindowEntity) -> Unit
-) : RecyclerView.Adapter<WindowAdapter.ViewHolder>() {
-
-    private var items: List<WindowEntity> = emptyList()
-
-    fun submitList(newItems: List<WindowEntity>) {
-        items = newItems
-        notifyDataSetChanged()
-    }
+) : ListAdapter<WindowEntity, WindowAdapter.ViewHolder>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemWindowBinding.inflate(
@@ -109,19 +106,24 @@ class WindowAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount() = items.size
 
     inner class ViewHolder(private val binding: ItemWindowBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(window: WindowEntity) {
-            binding.title.text = window.title.ifEmpty { "无标题" }
+            binding.title.text = window.title.ifEmpty { getString(R.string.no_title) }
             binding.url.text = window.url
             binding.root.setOnClickListener { onItemClick(window) }
             binding.closeBtn.setOnClickListener { onCloseClick(window) }
+        }
+    }
+
+    companion object {
+        private val DIFF = object : DiffUtil.ItemCallback<WindowEntity>() {
+            override fun areItemsTheSame(oldItem: WindowEntity, newItem: WindowEntity) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: WindowEntity, newItem: WindowEntity) = oldItem == newItem
         }
     }
 }

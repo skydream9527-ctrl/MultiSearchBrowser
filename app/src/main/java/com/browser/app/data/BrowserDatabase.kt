@@ -35,7 +35,11 @@ abstract class BrowserDatabase : RoomDatabase() {
                     context.applicationContext,
                     BrowserDatabase::class.java,
                     "browser_database"
-                ).build()
+                )
+                    // schema 变更时显式丢弃旧数据，避免应用崩溃。
+                    // 正式发布前应改为 Migration 策略以保留用户数据。
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

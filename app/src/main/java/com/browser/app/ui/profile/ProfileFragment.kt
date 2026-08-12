@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import coil.load
 import com.browser.app.R
 import com.browser.app.databinding.FragmentProfileBinding
 import com.browser.app.utils.PreferenceManager
@@ -41,7 +42,7 @@ class ProfileFragment : Fragment() {
         if (isGranted) {
             openImagePicker()
         } else {
-            Toast.makeText(requireContext(), "需要存储权限才能上传头像", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.storage_permission_required, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -62,13 +63,15 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadAvatar() {
-        preferenceManager.avatarUri?.let { uriString ->
-            try {
-                val uri = Uri.parse(uriString)
-                binding.avatarImage.setImageURI(uri)
-            } catch (e: Exception) {
-                binding.avatarImage.setImageResource(R.drawable.ic_avatar_placeholder)
-            }
+        val uriString = preferenceManager.avatarUri
+        if (uriString.isNullOrEmpty()) {
+            binding.avatarImage.setImageResource(R.drawable.ic_avatar_placeholder)
+            return
+        }
+        binding.avatarImage.load(Uri.parse(uriString)) {
+            crossfade(true)
+            placeholder(R.drawable.ic_avatar_placeholder)
+            error(R.drawable.ic_avatar_placeholder)
         }
     }
 
@@ -90,7 +93,7 @@ class ProfileFragment : Fragment() {
         }
 
         binding.settingsSection.setOnClickListener {
-            Toast.makeText(requireContext(), "设置功能即将上线", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.settings_coming_soon, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -135,7 +138,11 @@ class ProfileFragment : Fragment() {
         }
 
         preferenceManager.avatarUri = uri.toString()
-        binding.avatarImage.setImageURI(uri)
+        binding.avatarImage.load(uri) {
+            crossfade(true)
+            placeholder(R.drawable.ic_avatar_placeholder)
+            error(R.drawable.ic_avatar_placeholder)
+        }
         Toast.makeText(requireContext(), R.string.avatar_uploaded, Toast.LENGTH_SHORT).show()
     }
 

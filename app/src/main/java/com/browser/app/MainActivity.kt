@@ -1,11 +1,8 @@
 package com.browser.app
 
 import android.os.Bundle
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import com.browser.app.databinding.ActivityMainBinding
 
@@ -24,22 +21,29 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
+        // launchSingleTop + popUpTo(startDestination) 避免重复压栈导致的返回键累积
+        val tabNavOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setPopUpTo(R.id.homeFragment, false, false)
+            .build()
+
         binding.tabHome.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.homeFragment)
+            navController.navigate(R.id.homeFragment, null, tabNavOptions)
             updateTabSelection(0)
         }
 
         binding.tabWindows.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.windowsFragment)
+            navController.navigate(R.id.windowsFragment, null, tabNavOptions)
             updateTabSelection(1)
         }
 
         binding.tabBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
+            // 返回键不切换高亮，保留当前 tab 选中态更直观
         }
 
         binding.tabProfile.setOnClickListener {
-            navController.navigate(com.browser.app.R.id.profileFragment)
+            navController.navigate(R.id.profileFragment, null, tabNavOptions)
             updateTabSelection(3)
         }
     }
@@ -54,9 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         tabs.forEachIndexed { index, (icon, text, _) ->
             val color = if (index == selectedIndex) {
-                getColor(com.browser.app.R.color.primary)
+                getColor(R.color.primary)
             } else {
-                getColor(com.browser.app.R.color.gray)
+                getColor(R.color.gray)
             }
             icon.setColorFilter(color)
             text.setTextColor(color)

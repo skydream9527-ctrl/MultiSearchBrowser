@@ -8,7 +8,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.browser.app.R
 import com.browser.app.data.BrowserDatabase
@@ -70,27 +72,27 @@ class HistoryFragment : Fragment() {
         binding.btnClear.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle(R.string.clear_history)
-                .setMessage("确定要清空所有浏览历史吗？此操作不可撤销。")
-                .setPositiveButton("清空") { _, _ ->
+                .setMessage(R.string.clear_history_confirm)
+                .setPositiveButton(R.string.action_clear) { _, _ ->
                     lifecycleScope.launch {
                         historyRepository.clearHistory()
                     }
                 }
-                .setNegativeButton("取消", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show()
         }
     }
 
     private fun showDeleteDialog(history: HistoryEntity) {
         AlertDialog.Builder(requireContext())
-            .setTitle("删除记录")
-            .setMessage("确定要删除这条记录吗？")
-            .setPositiveButton("删除") { _, _ ->
+            .setTitle(R.string.delete_record)
+            .setMessage(R.string.confirm_delete_record)
+            .setPositiveButton(R.string.action_delete) { _, _ ->
                 lifecycleScope.launch {
                     historyRepository.deleteHistory(history)
                 }
             }
-            .setNegativeButton("取消", null)
+            .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
 
@@ -103,14 +105,7 @@ class HistoryFragment : Fragment() {
 class HistoryAdapter(
     private val onItemClick: (HistoryEntity) -> Unit,
     private val onLongClick: (HistoryEntity) -> Unit
-) : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
-
-    private var items: List<HistoryEntity> = emptyList()
-
-    fun submitList(newItems: List<HistoryEntity>) {
-        items = newItems
-        notifyDataSetChanged()
-    }
+) : ListAdapter<HistoryEntity, HistoryAdapter.ViewHolder>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemHistoryBinding.inflate(
@@ -122,16 +117,14 @@ class HistoryAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(getItem(position))
     }
-
-    override fun getItemCount() = items.size
 
     inner class ViewHolder(private val binding: ItemHistoryBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(history: HistoryEntity) {
-            binding.title.text = history.title.ifEmpty { "无标题" }
+            binding.title.text = history.title.ifEmpty { getString(R.string.no_title) }
             binding.url.text = history.url
             binding.timestamp.text = formatTimestamp(history.timestamp)
             binding.root.setOnClickListener { onItemClick(history) }
@@ -144,6 +137,13 @@ class HistoryAdapter(
         private fun formatTimestamp(timestamp: Long): String {
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
             return sdf.format(java.util.Date(timestamp))
+        }
+    }
+
+    companion object {
+        private val DIFF = object : DiffUtil.ItemCallback<HistoryEntity>() {
+            override fun areItemsTheSame(oldItem: HistoryEntity, newItem: HistoryEntity) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: HistoryEntity, newItem: HistoryEntity) = oldItem == newItem
         }
     }
 }

@@ -108,7 +108,7 @@ class HomeFragment : Fragment() {
             }
             navigateToWebview(url)
         } else {
-            Toast.makeText(requireContext(), "请输入搜索内容", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.input_search_query, Toast.LENGTH_SHORT).show()
         }
     }
 
