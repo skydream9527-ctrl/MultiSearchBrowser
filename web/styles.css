@@ -1458,6 +1458,94 @@ a { color: inherit; text-decoration: none; }
     color: var(--text-secondary);
 }
 
+/* ============ v1.7.0: AI 对话式摘要追问 ============ */
+.sp-followup { margin-top: 8px; }
+.sp-quick-questions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.sp-qq-btn {
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--divider);
+    background: var(--white);
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+}
+.sp-qq-btn:hover { background: var(--primary); color: var(--white); border-color: var(--primary); }
+.sp-input-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.sp-input-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    font-size: 14px;
+    background: var(--white);
+    color: var(--text-primary);
+}
+.sp-input-row button {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+.sp-input-row button:hover { background: var(--primary-dark); }
+#sp-followup-history {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+.sp-chat {
+    display: flex;
+    margin-bottom: 8px;
+}
+.sp-chat-user { justify-content: flex-end; }
+.sp-chat-ai { justify-content: flex-start; }
+.sp-chat-bubble {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+.sp-chat-user .sp-chat-bubble {
+    background: var(--primary);
+    color: var(--white);
+    border-bottom-right-radius: 4px;
+}
+.sp-chat-ai .sp-chat-bubble {
+    background: var(--gray-light);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+}
+
+/* ============ v1.7.0: 关键词云 ============ */
+.keyword-cloud {
+    padding: 16px;
+    background: var(--white);
+    border-radius: 8px;
+    margin: 8px;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+.keyword-cloud svg { max-width: 100%; height: auto; }
+.kw-cloud-item {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.kw-cloud-item:hover { opacity: 0.7; }
+
 /* ============ v1.4.0: Modal Overlay ============ */
 .modal-overlay {
     position: fixed;

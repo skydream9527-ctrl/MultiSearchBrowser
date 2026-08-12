@@ -1,12 +1,17 @@
 {
     "name": "MultiSearch Browser",
     "short_name": "MultiSearch",
-    "description": "多引擎并行搜索浏览器 · 7 引擎 + AI 多源研讨",
+    "description": "多引擎并行搜索浏览器 · 7 引擎 + AI 多源研讨 + 用户脚本 + 广告拦截",
     "start_url": "./index.html",
+    "scope": "./",
     "display": "standalone",
+    "display_override": ["standalone", "fullscreen"],
     "orientation": "portrait",
     "background_color": "#FAFAFA",
     "theme_color": "#2196F3",
+    "categories": ["productivity", "utilities", "search"],
+    "lang": "zh-CN",
+    "dir": "ltr",
     "icons": [
         {
             "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192'><rect width='192' height='192' rx='32' fill='%232196F3'/><text x='96' y='120' text-anchor='middle' font-size='80' fill='white'>🔎</text></svg>",
@@ -19,6 +24,82 @@
             "sizes": "512x512",
             "type": "image/svg+xml",
             "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "搜索",
+            "short_name": "搜索",
+            "description": "打开首页搜索",
+            "url": "./index.html?page=home",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' rx='16' fill='%232196F3'/><text x='48' y='60' text-anchor='middle' font-size='40' fill='white'>🔍</text></svg>",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "并行搜索",
+            "short_name": "并行",
+            "description": "多引擎并行搜索",
+            "url": "./index.html?page=parallel",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' rx='16' fill='%23FF5722'/><text x='48' y='60' text-anchor='middle' font-size='40' fill='white'>⚡</text></svg>",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "阅读历史",
+            "short_name": "历史",
+            "description": "查看浏览历史",
+            "url": "./index.html?page=history",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' rx='16' fill='%234CAF50'/><text x='48' y='60' text-anchor='middle' font-size='40' fill='white'>📜</text></svg>",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "RSS 订阅",
+            "short_name": "RSS",
+            "description": "查看 RSS 文章",
+            "url": "./index.html?page=rss",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' rx='16' fill='%23FF9800'/><text x='48' y='60' text-anchor='middle' font-size='40' fill='white'>📡</text></svg>",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "share_target": {
+        "action": "./index.html",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    },
+    "file_handlers": [
+        {
+            "action": "./index.html",
+            "accept": {
+                "text/html": [".html", ".htm"],
+                "application/json": [".json"],
+                "text/markdown": [".md"]
+            },
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' rx='16' fill='%232196F3'/><text x='48' y='60' text-anchor='middle' font-size='40' fill='white'>📄</text></svg>",
+                    "sizes": "96x96"
+                }
+            ],
+            "launch_type": "single-client"
         }
     ]
 }

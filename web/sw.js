@@ -1,8 +1,8 @@
 /**
  * MultiSearch Browser · Service Worker
- * v1.6.0：缓存静态资源 + 离线回退页 + 广告拦截
+ * v1.7.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA 增强
  */
-const CACHE_VERSION = 'msb-v1.6.0';
+const CACHE_VERSION = 'msb-v1.7.0';
 const STATIC_ASSETS = [
     './',
     './index.html',

@@ -9,6 +9,154 @@
     // ============ 工具库别名（v1.5.0 起逐步委派到 window.MSBUtils） ============
     const U = window.MSBUtils || {};
 
+    // ============ v1.7.0: PWA 启动处理 ============
+    function handlePwaLaunch() {
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+
+        // 1. share_target：接收其他 App 分享的文本/url
+        const sharedTitle = params.get('title');
+        const sharedText = params.get('text');
+        const sharedUrl = params.get('url');
+        if (sharedTitle || sharedText || sharedUrl) {
+            const query = sharedUrl || sharedText || sharedTitle || '';
+            if (query) {
+                // 自动填入搜索框并跳转首页
+                setTimeout(() => {
+                    const input = $('#search-input');
+                    if (input) {
+                        input.value = query;
+                        navigate('home');
+                        showToast('📥 已接收分享内容');
+                    }
+                }, 300);
+            }
+            // 清理 URL 参数（避免刷新重复触发）
+            url.searchParams.delete('title');
+            url.searchParams.delete('text');
+            url.searchParams.delete('url');
+            window.history.replaceState({}, '', url.toString());
+            return;
+        }
+
+        // 2. shortcuts：通过 ?page=xxx 进入
+        const page = params.get('page');
+        if (page) {
+            const validPages = ['home', 'parallel', 'history', 'rss', 'bookmarks', 'later', 'notes', 'passwords', 'stats', 'settings', 'profile'];
+            if (validPages.includes(page)) {
+                setTimeout(() => navigate(page), 100);
+            }
+            url.searchParams.delete('page');
+            window.history.replaceState({}, '', url.toString());
+            return;
+        }
+
+        // 3. 协议处理器：web+msb://search?q=xxx → ?msb_query=xxx
+        const msbQuery = params.get('msb_query');
+        if (msbQuery) {
+            setTimeout(() => {
+                const input = $('#search-input');
+                if (input) {
+                    input.value = msbQuery;
+                    navigate('home');
+                    showToast(`🔗 协议调用：${msbQuery}`);
+                }
+            }, 300);
+            url.searchParams.delete('msb_query');
+            window.history.replaceState({}, '', url.toString());
+        }
+    }
+
+    // v1.7.0: 注册自定义协议 web+msb://
+    function registerCustomProtocol() {
+        if (navigator.registerProtocolHandler) {
+            try {
+                const baseUrl = new URL('./index.html?msb_query=%s', window.location.href).href;
+                navigator.registerProtocolHandler('web+msb', baseUrl, 'MultiSearch 搜索');
+            } catch (e) {
+                // 部分浏览器要求 https，忽略错误
+                console.warn('[MSB] 协议注册失败:', e.message);
+            }
+        }
+    }
+
+    // v1.7.0: Launch Queue API（处理 file_handlers 等）
+    function setupLaunchQueue() {
+        if ('launchQueue' in window) {
+            window.launchQueue.setConsumer((launchParams) => {
+                // 处理文件
+                if (launchParams.files && launchParams.files.length > 0) {
+                    handleLaunchedFiles(launchParams.files);
+                }
+            });
+        }
+    }
+
+    // v1.7.0: File Handling API（PWA 桌面端右键打开文件）
+    function setupFileHandler() {
+        // 此处仅做能力检测，实际文件通过 launchQueue 处理
+        if ('launchQueue' in window) {
+            console.log('[MSB] File Handler 已就绪');
+        }
+    }
+
+    async function handleLaunchedFiles(files) {
+        for (const fileHandle of files) {
+            try {
+                const file = await fileHandle.getFile();
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'json') {
+                    // 导入数据备份
+                    importData(file);
+                    showToast(`📂 已导入文件：${file.name}`);
+                } else if (ext === 'html' || ext === 'htm') {
+                    // 导入书签 HTML
+                    importBookmarksHtml(file);
+                    showToast(`📂 已导入书签：${file.name}`);
+                } else if (ext === 'md') {
+                    // 在阅读模式中打开 Markdown
+                    const text = await file.text();
+                    const content = $('#reading-content');
+                    if (content) {
+                        content.innerHTML = renderMarkdown(text);
+                        $('#reading-title').textContent = file.name;
+                        $('#reading-mode').hidden = false;
+                        navigate('webview');
+                        showToast(`📄 已打开：${file.name}`);
+                    }
+                }
+            } catch (e) {
+                showToast(`❌ 打开文件失败：${e.message}`);
+            }
+        }
+    }
+
+    // v1.7.0: 简易 Markdown 渲染（用于打开 .md 文件）
+    function renderMarkdown(text) {
+        let html = escapeHtml(text);
+        // 标题
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        // 加粗、斜体
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // 代码块
+        html = html.replace(/```([\s\S]+?)```/g, '<pre>$1</pre>');
+        html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+        // 引用
+        html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+        // 列表
+        html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.+<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>');
+        // 链接
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        // 段落（双换行）
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = '<p>' + html + '</p>';
+        return html;
+    }
+
     // ============ 常量 ============
     const ENGINES = [
         { id: 'baidu',    name: '百度',  searchUrl: 'https://www.baidu.com/s?wd=',    color: '#2932E1' },
@@ -1435,6 +1583,9 @@
 
     // ============ v1.4.0: AI 摘要（TextRank + LLM 可选） ============
     let translateActive = false;
+    // v1.7.0: AI 对话式摘要上下文
+    let summaryChatMessages = []; // [{role, content}]
+    let summarySourceText = '';   // 原始文本，供追问引用
 
     function generateSummary(content) {
         const text = (content.innerText || '').trim();
@@ -1442,6 +1593,9 @@
             showToast('没有可摘要的内容');
             return;
         }
+        // v1.7.0: 重置对话上下文
+        summarySourceText = text;
+        summaryChatMessages = [];
         const mode = store.getAiSummaryMode();
         const panel = $('#summary-panel');
         const spContent = $('#sp-content');
@@ -1449,19 +1603,169 @@
         spContent.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-secondary)">⏳ 生成中...</div>';
 
         if (mode === 'llm') {
+            // v1.7.0: 首次生成时建立 system + user 上下文
+            const truncated = text.length > 4000 ? text.slice(0, 4000) + '...' : text;
+            summaryChatMessages.push({
+                role: 'system',
+                content: '你是一个文档摘要助手。用户会提供一段内容，请生成中文摘要，并在用户追问时基于原文继续回答。'
+            });
+            summaryChatMessages.push({
+                role: 'user',
+                content: `请对以下内容生成中文摘要，包含：1) 3 句话核心摘要 2) 5-8 个关键词 3) 主要观点列表。\n\n内容：${truncated}`
+            });
             generateLlmSummary(text).then(result => {
+                summaryChatMessages.push({ role: 'assistant', content: result.replace(/<[^>]+>/g, '') });
                 spContent.innerHTML = result;
+                appendFollowUpUI(spContent);
             }).catch(err => {
                 spContent.innerHTML = `<div style="color:var(--accent);padding:16px">❌ ${err}</div><div style="margin-top:8px;color:var(--text-secondary);font-size:13px">已切换到本地摘要</div>`;
-                setTimeout(() => { spContent.innerHTML = generateLocalSummary(text); }, 1500);
+                setTimeout(() => {
+                    const localResult = generateLocalSummary(text);
+                    spContent.innerHTML = localResult;
+                    appendFollowUpUI(spContent);
+                }, 1500);
             });
         } else {
             setTimeout(() => {
-                spContent.innerHTML = generateLocalSummary(text);
+                const localResult = generateLocalSummary(text);
+                spContent.innerHTML = localResult;
+                appendFollowUpUI(spContent);
             }, 300);
         }
 
         $('#sp-close').onclick = () => { panel.hidden = true; };
+    }
+
+    // v1.7.0: 追问 UI（输入框 + 快捷问题）
+    function appendFollowUpUI(container) {
+        const followUp = document.createElement('div');
+        followUp.className = 'sp-followup';
+        followUp.innerHTML = `
+            <div class="sp-section">
+                <div class="sp-section-title">💬 追问</div>
+                <div class="sp-quick-questions">
+                    <button class="sp-qq-btn" data-q="请用一句话总结">一句话总结</button>
+                    <button class="sp-qq-btn" data-q="列出核心观点">核心观点</button>
+                    <button class="sp-qq-btn" data-q="有哪些值得注意的细节？">注意细节</button>
+                    <button class="sp-qq-btn" data-q="适合什么读者？">适合读者</button>
+                </div>
+                <div class="sp-input-row">
+                    <input type="text" id="sp-followup-input" placeholder="输入追问..." autocomplete="off">
+                    <button id="sp-followup-send">发送</button>
+                </div>
+                <div id="sp-followup-history"></div>
+            </div>
+        `;
+        container.appendChild(followUp);
+        // 绑定事件
+        followUp.querySelectorAll('.sp-qq-btn').forEach(btn => {
+            btn.onclick = () => askFollowUp(btn.dataset.q);
+        });
+        $('#sp-followup-send').onclick = () => {
+            const input = $('#sp-followup-input');
+            const q = input.value.trim();
+            if (q) {
+                askFollowUp(q);
+                input.value = '';
+            }
+        };
+        $('#sp-followup-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const q = e.target.value.trim();
+                if (q) {
+                    askFollowUp(q);
+                    e.target.value = '';
+                }
+            }
+        });
+    }
+
+    async function askFollowUp(question) {
+        const historyEl = $('#sp-followup-history');
+        if (!historyEl) return;
+        // 渲染用户问题
+        const qDiv = document.createElement('div');
+        qDiv.className = 'sp-chat sp-chat-user';
+        qDiv.innerHTML = `<div class="sp-chat-bubble">${escapeHtml(question)}</div>`;
+        historyEl.appendChild(qDiv);
+        historyEl.scrollTop = historyEl.scrollHeight;
+
+        // 渲染"思考中"
+        const aDiv = document.createElement('div');
+        aDiv.className = 'sp-chat sp-chat-ai';
+        aDiv.innerHTML = '<div class="sp-chat-bubble">⏳ 思考中...</div>';
+        historyEl.appendChild(aDiv);
+        historyEl.scrollTop = historyEl.scrollHeight;
+
+        const mode = store.getAiSummaryMode();
+        if (mode === 'llm') {
+            try {
+                summaryChatMessages.push({ role: 'user', content: question });
+                const answer = await callLlmChat(summaryChatMessages);
+                summaryChatMessages.push({ role: 'assistant', content: answer });
+                aDiv.querySelector('.sp-chat-bubble').innerHTML = escapeHtml(answer).replace(/\n/g, '<br>');
+            } catch (e) {
+                aDiv.querySelector('.sp-chat-bubble').innerHTML = `❌ ${e.message}<br><span style="font-size:11px;color:var(--gray)">使用本地回答</span>`;
+                const localAnswer = localFollowUp(question);
+                aDiv.querySelector('.sp-chat-bubble').innerHTML = escapeHtml(localAnswer).replace(/\n/g, '<br>');
+            }
+        } else {
+            const localAnswer = localFollowUp(question);
+            setTimeout(() => {
+                aDiv.querySelector('.sp-chat-bubble').innerHTML = escapeHtml(localAnswer).replace(/\n/g, '<br>');
+            }, 300);
+        }
+        historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    async function callLlmChat(messages) {
+        const cfg = store.getLlmConfig();
+        if (!cfg || !cfg.apiKey) throw new Error('未配置 LLM API Key');
+        // 发送时附带截断的原文作为最后一条 system 上下文
+        const fullMessages = [...messages];
+        if (summarySourceText) {
+            const ctx = summarySourceText.length > 3000 ? summarySourceText.slice(0, 3000) + '...' : summarySourceText;
+            fullMessages.push({ role: 'system', content: `参考原文（仅用于回答追问）：\n${ctx}` });
+        }
+        const res = await fetch(cfg.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${cfg.apiKey}`
+            },
+            body: JSON.stringify({
+                model: cfg.model,
+                messages: fullMessages,
+                max_tokens: 800
+            })
+        });
+        if (!res.ok) throw new Error(`API 返回 ${res.status}`);
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || data.output?.text || '无返回';
+    }
+
+    // 本地追问回答（基于 TextRank 数据的简单启发式）
+    function localFollowUp(question) {
+        if (!summarySourceText) return '请先生成摘要';
+        const q = question.toLowerCase();
+        if (q.includes('一句话') || q.includes('简短')) {
+            const sentences = splitSentences(summarySourceText);
+            if (sentences.length > 0) return sentences[0];
+        }
+        if (q.includes('关键词') || q.includes('核心')) {
+            const words = tokenize(summarySourceText);
+            const freq = {};
+            words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+            const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([w]) => w);
+            return '关键词：' + top.join('、');
+        }
+        if (q.includes('观点') || q.includes('细节')) {
+            const sentences = splitSentences(summarySourceText);
+            return sentences.slice(0, 3).join('\n');
+        }
+        // 默认：返回前 3 句
+        const sentences = splitSentences(summarySourceText);
+        return sentences.slice(0, 3).join('\n');
     }
 
     function generateLocalSummary(text) {
@@ -1496,8 +1800,90 @@
             <div style="font-size:13px;color:var(--text-secondary)">
                 句子数：${sentences.length} · 词数：${words.length} · 字符：${text.length}
             </div></div>`;
-        html += '<div style="font-size:11px;color:var(--gray);margin-top:8px">由本地 TextRank 算法生成</div>';
+        // v1.7.0: 关键词云可视化按钮（携带 Top 30 词频数据）
+        const cloudWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 30);
+        const cloudData = cloudWords.map(([w, c]) => ({ word: w, count: c }));
+        html += `<div class="sp-section">
+            <div class="sp-section-title">☁ 词云</div>
+            <button class="sp-qq-btn" id="sp-show-cloud">查看词云可视化</button>
+            <div id="sp-cloud-container"></div>
+        </div>`;
+        html += `<div style="font-size:11px;color:var(--gray);margin-top:8px">由本地 TextRank 算法生成</div>`;
+        // 异步绑定按钮事件（innerHTML 设置后才能找到元素）
+        setTimeout(() => {
+            const btn = document.getElementById('sp-show-cloud');
+            if (btn) {
+                btn.onclick = () => {
+                    const container = document.getElementById('sp-cloud-container');
+                    if (container) {
+                        container.innerHTML = renderKeywordCloud(cloudData);
+                    }
+                };
+            }
+        }, 0);
         return html;
+    }
+
+    // v1.7.0: SVG 词云渲染
+    function renderKeywordCloud(words) {
+        if (!words || words.length === 0) return '<div style="color:var(--text-secondary);padding:8px">无关键词</div>';
+        const maxCount = words[0].count;
+        const minCount = words[words.length - 1].count;
+        const range = maxCount - minCount || 1;
+        // 螺旋布局：从中心向外旋转放置
+        const W = 320, H = 200;
+        const placed = [];
+        const colors = ['#2196F3', '#FF5722', '#4CAF50', '#FF9800', '#9C27B0', '#00BCD4', '#795548', '#607D8B'];
+        let angle = 0, radius = 0;
+        const cx = W / 2, cy = H / 2;
+        const items = words.slice(0, 24).map((w, i) => {
+            // 字号 12-28，按频率映射
+            const ratio = (w.count - minCount) / range;
+            const fontSize = 12 + Math.round(ratio * 16);
+            const color = colors[i % colors.length];
+            // 螺旋放置算法
+            let x = cx, y = cy;
+            let attempts = 0;
+            while (attempts < 80) {
+                x = cx + Math.cos(angle) * radius;
+                y = cy + Math.sin(angle) * radius;
+                // 检查碰撞（简化：估算文本宽 = 字号 * 字数 / 1.6）
+                const tw = fontSize * w.word.length * 0.6;
+                const th = fontSize;
+                const overlap = placed.some(p => {
+                    return Math.abs(x - p.x) < (tw + p.tw) / 2 + 4 && Math.abs(y - p.y) < (th + p.th) / 2 + 2;
+                });
+                if (!overlap && x - tw / 2 > 2 && x + tw / 2 < W - 2 && y - th / 2 > 2 && y + th / 2 < H - 2) {
+                    placed.push({ x, y, tw, th });
+                    break;
+                }
+                angle += 0.3;
+                radius += 0.8;
+                attempts++;
+            }
+            return { word: w.word, count: w.count, x, y, fontSize, color };
+        });
+        let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${W}px">`;
+        svg += `<rect width="${W}" height="${H}" fill="var(--gray-light)" rx="8"/>`;
+        items.forEach(item => {
+            svg += `<text x="${item.x}" y="${item.y}" font-size="${item.fontSize}" fill="${item.color}"
+                text-anchor="middle" dominant-baseline="middle"
+                class="kw-cloud-item"
+                data-word="${escapeAttr(item.word)}"
+                onclick="window.__msbCloudClick && window.__msbCloudClick('${escapeAttr(item.word)}')">${escapeHtml(item.word)}</text>`;
+        });
+        svg += '</svg>';
+        // 暴露点击回调
+        window.__msbCloudClick = (word) => {
+            // 点击关键词：填入搜索框并搜索
+            const input = $('#search-input');
+            if (input) {
+                input.value = word;
+                navigate('home');
+                handleSearch();
+            }
+        };
+        return svg;
     }
 
     function splitSentences(text) {
@@ -4038,6 +4424,10 @@
         setupPasswordsPage();
         setupActivityMonitor();
         setupErrorMonitor();
+        handlePwaLaunch();
+        registerCustomProtocol();
+        setupLaunchQueue();
+        setupFileHandler();
         renderTabs();
 
         $('#search-btn').onclick = handleSearch;
