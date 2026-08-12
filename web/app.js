@@ -38,6 +38,16 @@
         // v1.3.1
         customEngines: 'msb_custom_engines',
         darkSchedule: 'msb_dark_schedule',
+        // v1.4.0
+        rssFeeds: 'msb_rss_feeds',
+        rssCache: 'msb_rss_cache',
+        passwords: 'msb_passwords_encrypted',
+        masterPwdHash: 'msb_master_pwd_hash',
+        masterPwdSalt: 'msb_master_pwd_salt',
+        syncConfig: 'msb_sync_config',
+        llmConfig: 'msb_llm_config',
+        aiSummaryMode: 'msb_ai_summary_mode',
+        translateMode: 'msb_translate_mode',
     };
 
     // 5 种主题色预设
@@ -276,6 +286,65 @@
         getDarkSchedule: () => load(STORAGE_KEYS.darkSchedule, 'off'),
         setDarkSchedule: (mode) => save(STORAGE_KEYS.darkSchedule, mode),
 
+        // ============ v1.4.0 ============
+        // RSS 订阅源
+        getRssFeeds: () => load(STORAGE_KEYS.rssFeeds, []),
+        addRssFeed: (name, url) => {
+            const list = store.getRssFeeds();
+            const feed = { id: Date.now(), name, url, addedAt: Date.now() };
+            list.push(feed);
+            save(STORAGE_KEYS.rssFeeds, list);
+            return feed;
+        },
+        deleteRssFeed: (id) => save(STORAGE_KEYS.rssFeeds, store.getRssFeeds().filter(f => f.id !== id)),
+        getRssCache: () => load(STORAGE_KEYS.rssCache, []),
+        setRssCache: (items) => save(STORAGE_KEYS.rssCache, items),
+
+        // 密码管理（AES 加密）
+        getMasterPwdHash: () => load(STORAGE_KEYS.masterPwdHash, null),
+        getMasterPwdSalt: () => load(STORAGE_KEYS.masterPwdSalt, null),
+        setMasterPwd: (pwd) => {
+            const salt = CryptoJS.lib.WordArray.random(128 / 8).toString();
+            const hash = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 1000 }).toString();
+            save(STORAGE_KEYS.masterPwdHash, hash);
+            save(STORAGE_KEYS.masterPwdSalt, salt);
+        },
+        verifyMasterPwd: (pwd) => {
+            const hash = store.getMasterPwdHash();
+            const salt = store.getMasterPwdSalt();
+            if (!hash || !salt) return false;
+            const test = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 1000 }).toString();
+            return test === hash;
+        },
+        getEncryptedPasswords: () => load(STORAGE_KEYS.passwords, null),
+        savePasswords: (list, masterPwd) => {
+            const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(list), masterPwd).toString();
+            save(STORAGE_KEYS.passwords, ciphertext);
+        },
+        loadPasswords: (masterPwd) => {
+            const ciphertext = store.getEncryptedPasswords();
+            if (!ciphertext) return [];
+            try {
+                const bytes = CryptoJS.AES.decrypt(ciphertext, masterPwd);
+                const text = bytes.toString(CryptoJS.enc.Utf8);
+                return text ? JSON.parse(text) : [];
+            } catch { return null; } // 密码错误
+        },
+
+        // 同步配置
+        getSyncConfig: () => load(STORAGE_KEYS.syncConfig, { type: 'off' }),
+        setSyncConfig: (cfg) => save(STORAGE_KEYS.syncConfig, cfg),
+
+        // LLM 配置
+        getLlmConfig: () => load(STORAGE_KEYS.llmConfig, null),
+        setLlmConfig: (cfg) => save(STORAGE_KEYS.llmConfig, cfg),
+
+        // AI 摘要模式 / 翻译模式
+        getAiSummaryMode: () => load(STORAGE_KEYS.aiSummaryMode, 'local'),
+        setAiSummaryMode: (mode) => save(STORAGE_KEYS.aiSummaryMode, mode),
+        getTranslateMode: () => load(STORAGE_KEYS.translateMode, 'online'),
+        setTranslateMode: (mode) => save(STORAGE_KEYS.translateMode, mode),
+
         clearAllData: () => { Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key)); },
     };
 
@@ -308,7 +377,7 @@
     }
 
     // ============ 路由 ============
-    const routes = ['home', 'parallel', 'aggregated', 'windows', 'webview', 'profile', 'history', 'bookmarks', 'later', 'notes', 'stats', 'settings'];
+    const routes = ['home', 'parallel', 'aggregated', 'windows', 'webview', 'profile', 'history', 'bookmarks', 'later', 'notes', 'rss', 'passwords', 'stats', 'settings'];
     let currentRoute = 'home';
     let routeStack = ['home'];
 
@@ -324,6 +393,8 @@
         if (route === 'bookmarks') { renderBookmarks(); $('#bookmarks-filter').value = ''; }
         if (route === 'later') renderLater();
         if (route === 'notes') renderNotes();
+        if (route === 'rss') renderRss();
+        if (route === 'passwords') renderPasswords();
         if (route === 'stats') renderStats();
         if (route === 'profile') renderProfile();
         if (route === 'settings') renderSettings();
@@ -883,12 +954,21 @@
             if (ttsPlaying) stopTts();
             else startTts(content);
         };
+        $('#reading-summary').onclick = () => generateSummary(content);
+        $('#reading-translate').onclick = () => toggleTranslateMode(content);
+        $('#reading-screenshot').onclick = () => captureScreenshot(content);
 
         // 划词监听
         content.onmouseup = (e) => {
             const sel = content.ownerDocument.getSelection();
             const text = sel ? sel.toString().trim() : '';
             const pop = $('#note-popover');
+            // 翻译模式下，选词即翻译
+            if (translateActive && text.length > 0) {
+                performTranslate(text, e);
+                pop.hidden = true;
+                return;
+            }
             if (text.length > 0) {
                 const range = sel.getRangeAt(0);
                 const rect = range.getBoundingClientRect();
@@ -951,6 +1031,630 @@
         ttsPlaying = false;
         const btn = $('#reading-tts');
         if (btn) btn.classList.remove('reading-tts-active');
+    }
+
+    // ============ v1.4.0: AI 摘要（TextRank + LLM 可选） ============
+    let translateActive = false;
+
+    function generateSummary(content) {
+        const text = (content.innerText || '').trim();
+        if (!text) {
+            showToast('没有可摘要的内容');
+            return;
+        }
+        const mode = store.getAiSummaryMode();
+        const panel = $('#summary-panel');
+        const spContent = $('#sp-content');
+        panel.hidden = false;
+        spContent.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-secondary)">⏳ 生成中...</div>';
+
+        if (mode === 'llm') {
+            generateLlmSummary(text).then(result => {
+                spContent.innerHTML = result;
+            }).catch(err => {
+                spContent.innerHTML = `<div style="color:var(--accent);padding:16px">❌ ${err}</div><div style="margin-top:8px;color:var(--text-secondary);font-size:13px">已切换到本地摘要</div>`;
+                setTimeout(() => { spContent.innerHTML = generateLocalSummary(text); }, 1500);
+            });
+        } else {
+            setTimeout(() => {
+                spContent.innerHTML = generateLocalSummary(text);
+            }, 300);
+        }
+
+        $('#sp-close').onclick = () => { panel.hidden = true; };
+    }
+
+    function generateLocalSummary(text) {
+        // TextRank 算法
+        const sentences = splitSentences(text);
+        if (sentences.length < 3) {
+            return `<div class="sp-section"><div class="sp-section-title">原文（太短未摘要）</div><div>${escapeHtml(text.slice(0, 500))}</div></div>`;
+        }
+        // 词频统计（简易中文分词：按字符+英文按空格）
+        const words = tokenize(text);
+        const wordFreq = {};
+        words.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
+        // 句子评分：词频累加
+        const sentScores = sentences.map((s, i) => {
+            const sw = tokenize(s);
+            let score = 0;
+            sw.forEach(w => score += wordFreq[w] || 0);
+            return { idx: i, text: s, score: score / (sw.length || 1) };
+        });
+        // 取 Top 3
+        const top = sentScores.sort((a, b) => b.score - a.score).slice(0, 3).sort((a, b) => a.idx - b.idx);
+        // 关键词 Top 8
+        const topWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+        let html = '<div class="sp-section"><div class="sp-section-title">📋 摘要</div>';
+        top.forEach(s => html += `<div style="margin-bottom:8px">${escapeHtml(s.text)}</div>`);
+        html += '</div>';
+        html += '<div class="sp-section"><div class="sp-section-title">🔑 关键词</div><div class="sp-keywords">';
+        topWords.forEach(([w, c]) => html += `<span class="sp-keyword">${escapeHtml(w)} (${c})</span>`);
+        html += '</div></div>';
+        html += `<div class="sp-section"><div class="sp-section-title">📊 统计</div>
+            <div style="font-size:13px;color:var(--text-secondary)">
+                句子数：${sentences.length} · 词数：${words.length} · 字符：${text.length}
+            </div></div>`;
+        html += '<div style="font-size:11px;color:var(--gray);margin-top:8px">由本地 TextRank 算法生成</div>';
+        return html;
+    }
+
+    function splitSentences(text) {
+        return text.split(/[。！？!?\n]+/).map(s => s.trim()).filter(s => s.length > 5);
+    }
+
+    function tokenize(text) {
+        const words = [];
+        // 英文单词
+        const enMatches = text.match(/[a-zA-Z]{2,}/g) || [];
+        words.push(...enMatches.map(w => w.toLowerCase()));
+        // 中文：按字符二元组（简易分词）
+        const zhMatches = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
+        zhMatches.forEach(seg => {
+            for (let i = 0; i < seg.length - 1; i++) {
+                words.push(seg.substr(i, 2));
+            }
+        });
+        return words;
+    }
+
+    async function generateLlmSummary(text) {
+        const cfg = store.getLlmConfig();
+        if (!cfg || !cfg.apiKey) {
+            throw new Error('未配置 LLM API Key');
+        }
+        const truncated = text.length > 4000 ? text.slice(0, 4000) + '...' : text;
+        const prompt = `请对以下内容生成中文摘要，包含：1) 3 句话核心摘要 2) 5-8 个关键词 3) 主要观点列表。\n\n内容：${truncated}`;
+        const res = await fetch(cfg.apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${cfg.apiKey}`
+            },
+            body: JSON.stringify({
+                model: cfg.model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 800
+            })
+        });
+        if (!res.ok) throw new Error(`API 返回 ${res.status}`);
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content || data.output?.text || '无返回';
+        return `<div class="sp-section"><div class="sp-section-title">🤖 LLM 摘要</div><div style="white-space:pre-wrap">${escapeHtml(content)}</div></div>`;
+    }
+
+    // ============ v1.4.0: 划词翻译 ============
+    function toggleTranslateMode(content) {
+        translateActive = !translateActive;
+        const btn = $('#reading-translate');
+        if (translateActive) {
+            btn.classList.add('reading-tts-active');
+            showToast('🌐 翻译模式已开启，选词即翻译');
+        } else {
+            btn.classList.remove('reading-tts-active');
+            $('#translate-popover').hidden = true;
+            showToast('翻译模式已关闭');
+        }
+    }
+
+    async function performTranslate(text, event) {
+        const pop = $('#translate-popover');
+        const result = $('#tp-result');
+        const lang = $('#tp-lang');
+        const isZh = /[\u4e00-\u9fa5]/.test(text);
+        const targetLang = isZh ? 'en' : 'zh';
+        lang.textContent = `${isZh ? '中' : '英'} → ${targetLang === 'en' ? '英' : '中'}`;
+        result.textContent = '翻译中...';
+        pop.hidden = false;
+        // 定位
+        const x = event.clientX || (window.innerWidth / 2);
+        const y = event.clientY || 100;
+        pop.style.left = Math.max(8, Math.min(window.innerWidth - 260, x - 120)) + 'px';
+        pop.style.top = Math.max(8, y + 16) + 'px';
+
+        const mode = store.getTranslateMode();
+        if (mode === 'offline') {
+            result.innerHTML = await offlineTranslate(text, isZh);
+        } else {
+            result.innerHTML = await onlineTranslate(text, isZh, targetLang);
+        }
+
+        $('#tp-close').onclick = () => { pop.hidden = true; };
+    }
+
+    async function onlineTranslate(text, isZh, targetLang) {
+        try {
+            const src = isZh ? 'zh' : 'en';
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|${targetLang}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const translated = data.responseData?.translatedText || '翻译失败';
+            return `<div style="font-weight:500;margin-bottom:4px">${escapeHtml(translated)}</div>
+                <div style="font-size:11px;color:var(--gray)">via MyMemory API</div>`;
+        } catch (e) {
+            return `❌ 在线翻译失败：${e.message}<br><span style="font-size:11px;color:var(--gray)">可切换到离线模式</span>`;
+        }
+    }
+
+    async function offlineTranslate(text, isZh) {
+        // 简易离线：英文单词直接给词义提示
+        if (isZh) {
+            return `<div style="color:var(--text-secondary)">离线模式暂不支持中→英</div>`;
+        }
+        const lower = text.toLowerCase().trim();
+        if (lower.length > 30) {
+            return `<div style="color:var(--text-secondary)">离线模式仅支持单词/短语</div>`;
+        }
+        return `<div style="font-weight:500">${escapeHtml(text)}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">离线模式：建议切换到 MyMemory 在线</div>`;
+    }
+
+    // ============ v1.4.0: 截图分享 ============
+    async function captureScreenshot(content) {
+        if (typeof html2canvas === 'undefined') {
+            showToast('截图库未加载');
+            return;
+        }
+        showToast('📸 正在生成截图...');
+        try {
+            const canvas = await html2canvas(content, {
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || '#FFFFFF',
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `screenshot-${new Date().toISOString().slice(0, 10)}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('✅ 截图已下载');
+            }, 'image/png');
+        } catch (err) {
+            showToast('截图失败：' + err.message);
+        }
+    }
+
+    // ============ v1.4.0: RSS 订阅 ============
+    function renderRss(filter = '') {
+        const items = store.getRssCache();
+        const feeds = store.getRssFeeds();
+        const filtered = filter
+            ? items.filter(i => (i.title + i.description).toLowerCase().includes(filter.toLowerCase()))
+            : items;
+        const listEl = $('#rss-list');
+        const empty = $('#rss-empty');
+        if (!listEl) return;
+        if (filtered.length === 0) {
+            listEl.innerHTML = '';
+            if (empty) empty.hidden = false;
+            return;
+        }
+        if (empty) empty.hidden = true;
+        listEl.innerHTML = '';
+        filtered.slice(0, 100).forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'rss-item';
+            const desc = (item.description || '').replace(/<[^>]+>/g, '').slice(0, 120);
+            card.innerHTML = `
+                <span class="ri-source">${escapeHtml(item.source || 'RSS')}</span>
+                <div class="ri-title">${escapeHtml(item.title)}</div>
+                <div class="ri-desc">${escapeHtml(desc)}</div>
+                <div class="ri-time">${item.pubDate ? formatTime(new Date(item.pubDate).getTime()) : ''}</div>
+            `;
+            card.onclick = () => { if (item.link) openWebview(item.link, -1); };
+            listEl.appendChild(card);
+        });
+    }
+
+    function setupRssPage() {
+        $('#rss-filter').addEventListener('input', (e) => {
+            renderRss(e.target.value.trim());
+        });
+        $('#rss-add-btn').onclick = async () => {
+            const name = await inputDialog('订阅源名称', '');
+            if (!name) return;
+            const url = await inputDialog('RSS URL', '');
+            if (!url) return;
+            store.addRssFeed(name, url);
+            showToast('已添加，正在抓取...');
+            await refreshRss();
+            renderRss();
+        };
+    }
+
+    async function refreshRss() {
+        const feeds = store.getRssFeeds();
+        if (feeds.length === 0) return;
+        const all = [];
+        for (const feed of feeds) {
+            try {
+                const items = await fetchRssFeed(feed);
+                all.push(...items);
+            } catch (e) {
+                console.error('RSS 抓取失败', feed.url, e);
+            }
+        }
+        // 按时间倒序
+        all.sort((a, b) => {
+            const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+            const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+            return tb - ta;
+        });
+        store.setRssCache(all);
+    }
+
+    async function fetchRssFeed(feed) {
+        const proxied = 'https://corsproxy.io/?url=' + encodeURIComponent(feed.url);
+        const res = await fetch(proxied);
+        const text = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/xml');
+        const items = [];
+        // RSS 2.0
+        doc.querySelectorAll('item').forEach(item => {
+            items.push({
+                title: item.querySelector('title')?.textContent || '',
+                link: item.querySelector('link')?.textContent || '',
+                description: item.querySelector('description')?.textContent || '',
+                pubDate: item.querySelector('pubDate')?.textContent || '',
+                source: feed.name
+            });
+        });
+        // Atom
+        if (items.length === 0) {
+            doc.querySelectorAll('entry').forEach(entry => {
+                items.push({
+                    title: entry.querySelector('title')?.textContent || '',
+                    link: entry.querySelector('link')?.getAttribute('href') || '',
+                    description: entry.querySelector('summary')?.textContent || entry.querySelector('content')?.textContent || '',
+                    pubDate: entry.querySelector('published')?.textContent || entry.querySelector('updated')?.textContent || '',
+                    source: feed.name
+                });
+            });
+        }
+        return items;
+    }
+
+    // ============ v1.4.0: 密码管理 ============
+    let masterPwdSession = null; // 内存中保留，关闭页面失效
+
+    function renderPasswords(filter = '') {
+        const listEl = $('#pwd-list');
+        const empty = $('#pwd-empty');
+        if (!listEl) return;
+        // 未设置主密码
+        if (!store.getMasterPwdHash()) {
+            listEl.innerHTML = '';
+            if (empty) {
+                empty.hidden = false;
+                empty.innerHTML = '🔒 请先在设置中设置主密码';
+            }
+            return;
+        }
+        // 未解锁
+        if (!masterPwdSession) {
+            listEl.innerHTML = '';
+            if (empty) {
+                empty.hidden = false;
+                empty.innerHTML = '🔒 请输入主密码解锁<br><button id="pwd-unlock-btn" class="btn-primary" style="margin-top:12px">解锁</button>';
+                $('#pwd-unlock-btn').onclick = () => showPwdUnlock();
+            }
+            return;
+        }
+        const list = store.loadPasswords(masterPwdSession) || [];
+        const filtered = filter
+            ? list.filter(p => (p.site + p.username).toLowerCase().includes(filter.toLowerCase()))
+            : list;
+        if (filtered.length === 0) {
+            listEl.innerHTML = '';
+            if (empty) { empty.hidden = false; empty.innerHTML = '暂无保存的密码<br>点击右上角添加'; }
+            return;
+        }
+        if (empty) empty.hidden = true;
+        listEl.innerHTML = '';
+        filtered.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'pwd-item';
+            const firstChar = (p.site || '?')[0].toUpperCase();
+            card.innerHTML = `
+                <div class="pi-icon">${firstChar}</div>
+                <div class="pi-body">
+                    <div class="pi-site">${escapeHtml(p.site)}</div>
+                    <div class="pi-user">${escapeHtml(p.username || '')}</div>
+                </div>
+                <div class="pi-actions">
+                    <button class="pi-btn" data-act="copy" aria-label="复制密码">📋</button>
+                    <button class="pi-btn" data-act="edit" aria-label="编辑">✏</button>
+                    <button class="pi-btn danger" data-act="del" aria-label="删除">✕</button>
+                </div>
+            `;
+            card.querySelector('[data-act="copy"]').onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(p.password).then(() => {
+                    showToast('📋 密码已复制（10 秒后清空剪贴板）');
+                    setTimeout(() => navigator.clipboard.writeText(''), 10000);
+                });
+            };
+            card.querySelector('[data-act="edit"]').onclick = (e) => {
+                e.stopPropagation();
+                editPassword(p);
+            };
+            card.querySelector('[data-act="del"]').onclick = async (e) => {
+                e.stopPropagation();
+                const ok = await confirmDialog('删除密码', `确定要删除「${p.site}」的密码吗？`);
+                if (ok) {
+                    const newList = list.filter(x => x.id !== p.id);
+                    store.savePasswords(newList, masterPwdSession);
+                    renderPasswords(filter);
+                }
+            };
+            listEl.appendChild(card);
+        });
+    }
+
+    function setupPasswordsPage() {
+        $('#pwd-filter').addEventListener('input', (e) => {
+            renderPasswords(e.target.value.trim());
+        });
+        $('#pwd-add-btn').onclick = () => {
+            if (!store.getMasterPwdHash()) {
+                showToast('请先在设置中设置主密码');
+                return;
+            }
+            if (!masterPwdSession) {
+                showPwdUnlock(() => editPassword(null));
+                return;
+            }
+            editPassword(null);
+        };
+    }
+
+    function editPassword(existing) {
+        const site = existing?.site || '';
+        const username = existing?.username || '';
+        const password = existing?.password || '';
+        const modal = $('#pwd-unlock-modal');
+        $('#pwd-unlock-title').textContent = existing ? '编辑密码' : '添加密码';
+        // 临时改造 modal 为多字段
+        const inputEl = $('#pwd-unlock-input');
+        // 用 prompt 链式输入更简单
+        (async () => {
+            const newSite = await inputDialog('站点名', site);
+            if (newSite === null) return;
+            const newUser = await inputDialog('用户名', username);
+            if (newUser === null) return;
+            const newPwd = await inputDialog('密码（留空自动生成）', password);
+            if (newPwd === null) return;
+            const finalPwd = newPwd || generatePassword(16);
+            const list = store.loadPasswords(masterPwdSession) || [];
+            if (existing) {
+                const idx = list.findIndex(x => x.id === existing.id);
+                if (idx >= 0) list[idx] = { ...list[idx], site: newSite, username: newUser, password: finalPwd };
+            } else {
+                list.push({ id: Date.now(), site: newSite, username: newUser, password: finalPwd });
+            }
+            store.savePasswords(list, masterPwdSession);
+            renderPasswords();
+            showToast('✅ 已保存');
+        })();
+    }
+
+    function generatePassword(len = 16) {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        let pwd = '';
+        for (let i = 0; i < len; i++) {
+            pwd += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return pwd;
+    }
+
+    function showPwdUnlock(callback) {
+        const modal = $('#pwd-unlock-modal');
+        $('#pwd-unlock-title').textContent = '🔑 输入主密码';
+        const input = $('#pwd-unlock-input');
+        input.value = '';
+        modal.hidden = false;
+        setTimeout(() => input.focus(), 50);
+        const ok = $('#pwd-unlock-ok'), cancel = $('#pwd-unlock-cancel');
+        const cleanup = () => { modal.hidden = true; ok.onclick = null; cancel.onclick = null; input.onkeydown = null; };
+        ok.onclick = () => {
+            const pwd = input.value;
+            if (store.verifyMasterPwd(pwd)) {
+                masterPwdSession = pwd;
+                cleanup();
+                showToast('✅ 已解锁');
+                if (callback) callback();
+                else renderPasswords();
+            } else {
+                showToast('❌ 主密码错误');
+            }
+        };
+        cancel.onclick = () => { cleanup(); };
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') ok.click();
+            if (e.key === 'Escape') cancel.click();
+        };
+    }
+
+    async function setupMasterPwd() {
+        const existing = store.getMasterPwdHash();
+        if (existing) {
+            const ok = await confirmDialog('重设主密码', '重设主密码将清除所有已存密码，确定吗？');
+            if (!ok) return;
+        }
+        const pwd = await inputDialog('设置主密码（至少 6 位）', '');
+        if (!pwd || pwd.length < 6) {
+            showToast('密码至少 6 位');
+            return;
+        }
+        const confirm = await inputDialog('再次输入确认', '');
+        if (pwd !== confirm) {
+            showToast('两次输入不一致');
+            return;
+        }
+        store.setMasterPwd(pwd);
+        // 清除旧密码
+        save(STORAGE_KEYS.passwords, null);
+        masterPwdSession = pwd;
+        showToast('✅ 主密码已设置');
+    }
+
+    // ============ v1.4.0: 跨设备同步 ============
+    function showSyncConfig() {
+        const modal = $('#sync-config-modal');
+        const cfg = store.getSyncConfig();
+        $('#sync-type').value = cfg.type || 'off';
+        $('#sync-url').value = cfg.url || '';
+        $('#sync-user').value = cfg.user || '';
+        $('#sync-pass').value = cfg.pass || '';
+        modal.hidden = false;
+        $('#sync-save').onclick = () => {
+            const newCfg = {
+                type: $('#sync-type').value,
+                url: $('#sync-url').value.trim(),
+                user: $('#sync-user').value.trim(),
+                pass: $('#sync-pass').value
+            };
+            store.setSyncConfig(newCfg);
+            modal.hidden = true;
+            showToast('✅ 同步配置已保存');
+        };
+        $('#sync-cancel').onclick = () => { modal.hidden = true; };
+    }
+
+    async function syncNow() {
+        const cfg = store.getSyncConfig();
+        if (cfg.type === 'off' || !cfg.url) {
+            showToast('请先配置同步');
+            return;
+        }
+        showToast('🔄 正在同步...');
+        try {
+            if (cfg.type === 'webdav') {
+                await syncWebDAV(cfg);
+            } else if (cfg.type === 'gist') {
+                await syncGist(cfg);
+            }
+            showToast('✅ 同步成功');
+        } catch (e) {
+            showToast('❌ 同步失败：' + e.message);
+        }
+    }
+
+    async function syncWebDAV(cfg) {
+        const data = exportDataRaw();
+        const url = cfg.url.replace(/\/$/, '') + '/multisearch-backup.json';
+        const auth = btoa(cfg.user + ':' + cfg.pass);
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Basic ' + auth,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }
+
+    async function syncGist(cfg) {
+        const data = exportDataRaw();
+        const gistId = cfg.url;
+        const token = cfg.user;
+        const filename = cfg.pass || 'multisearch-backup.json';
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { [filename]: { content: JSON.stringify(data, null, 2) } }
+            })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }
+
+    function exportDataRaw() {
+        return {
+            version: '1.4.0',
+            exportTime: new Date().toISOString(),
+            engine: store.getSelectedEngine(),
+            windows: store.getWindows(),
+            bookmarks: store.getBookmarks(),
+            bookmarkFolders: store.getBookmarkFolders(),
+            history: store.getHistory(),
+            searchHistory: store.getSearchHistory(),
+            theme: store.getTheme(),
+            themeColor: store.getThemeColor(),
+            parallelEngines: store.getParallelEngines(),
+            laterList: store.getLaterList(),
+            notes: store.getNotes(),
+            tabs: store.getTabs(),
+            customEngines: store.getCustomEngines(),
+            darkSchedule: store.getDarkSchedule(),
+            rssFeeds: store.getRssFeeds(),
+        };
+    }
+
+    // ============ v1.4.0: LLM API 配置 ============
+    function showLlmConfig() {
+        const modal = $('#llm-config-modal');
+        const cfg = store.getLlmConfig() || {};
+        $('#llm-provider').value = cfg.provider || 'qianwen';
+        $('#llm-api-key').value = cfg.apiKey || '';
+        $('#llm-api-url').value = cfg.apiUrl || '';
+        $('#llm-model').value = cfg.model || '';
+        modal.hidden = false;
+        // 自动填充默认 URL/model
+        $('#llm-provider').onchange = (e) => {
+            const presets = {
+                qianwen: { url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-turbo' },
+                doubao: { url: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: 'doubao-pro-4k' },
+                deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+                custom: { url: '', model: '' }
+            };
+            const p = presets[e.target.value];
+            if (p) {
+                $('#llm-api-url').value = p.url;
+                $('#llm-model').value = p.model;
+            }
+        };
+        $('#llm-save').onclick = () => {
+            const newCfg = {
+                provider: $('#llm-provider').value,
+                apiKey: $('#llm-api-key').value.trim(),
+                apiUrl: $('#llm-api-url').value.trim(),
+                model: $('#llm-model').value.trim()
+            };
+            store.setLlmConfig(newCfg);
+            modal.hidden = true;
+            showToast('✅ LLM 配置已保存');
+        };
+        $('#llm-cancel').onclick = () => { modal.hidden = true; };
     }
 
     // 还原已存笔记高亮
@@ -1313,6 +2017,8 @@
                 else if (action === 'bookmarks') navigate('bookmarks');
                 else if (action === 'later') navigate('later');
                 else if (action === 'notes') navigate('notes');
+                else if (action === 'rss') navigate('rss');
+                else if (action === 'passwords') navigate('passwords');
                 else if (action === 'stats') navigate('stats');
                 else if (action === 'settings') navigate('settings');
             };
@@ -1360,6 +2066,12 @@
 
         // 自定义引擎列表
         renderCustomEngineList();
+
+        // v1.4.0: AI 摘要模式 / 翻译模式
+        const aiSel = $('#ai-summary-mode');
+        if (aiSel) aiSel.value = store.getAiSummaryMode();
+        const trSel = $('#translate-mode');
+        if (trSel) trSel.value = store.getTranslateMode();
     }
 
     function renderCustomEngineList() {
@@ -1437,6 +2149,16 @@
         $('#import-file').onchange = (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
         $('#import-bookmarks-file').onchange = (e) => { if (e.target.files[0]) importBookmarksHtml(e.target.files[0]); e.target.value = ''; };
 
+        // v1.4.0: AI / 翻译模式
+        $('#ai-summary-mode').onchange = (e) => {
+            store.setAiSummaryMode(e.target.value);
+            showToast('AI 摘要模式已更新');
+        };
+        $('#translate-mode').onchange = (e) => {
+            store.setTranslateMode(e.target.value);
+            showToast('翻译模式已更新');
+        };
+
         $$('[data-action]').forEach(el => {
             if (el.id === 'setting-dark-mode') return;
             el.onclick = () => {
@@ -1447,6 +2169,10 @@
                 else if (action === 'import-bookmarks-html') $('#import-bookmarks-file').click();
                 else if (action === 'clear-all') clearAllData();
                 else if (action === 'open-incognito') openIncognito();
+                else if (action === 'config-llm') showLlmConfig();
+                else if (action === 'config-sync') showSyncConfig();
+                else if (action === 'sync-now') syncNow();
+                else if (action === 'config-master-pwd') setupMasterPwd();
             };
         });
     }
@@ -1636,7 +2362,7 @@
     // ============ 数据导出/导入 ============
     function exportData() {
         const data = {
-            version: '1.3.1',
+            version: '1.4.0',
             exportTime: new Date().toISOString(),
             engine: store.getSelectedEngine(),
             windows: store.getWindows(),
@@ -1657,6 +2383,13 @@
             // v1.3.1
             customEngines: store.getCustomEngines(),
             darkSchedule: store.getDarkSchedule(),
+            // v1.4.0（不导出密码加密数据，安全考虑）
+            rssFeeds: store.getRssFeeds(),
+            rssCache: store.getRssCache(),
+            syncConfig: store.getSyncConfig(),
+            llmConfig: store.getLlmConfig(),
+            aiSummaryMode: store.getAiSummaryMode(),
+            translateMode: store.getTranslateMode(),
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1693,6 +2426,13 @@
             if (data.scrollProgress) save(STORAGE_KEYS.scrollProgress, data.scrollProgress);
             if (data.customEngines) save(STORAGE_KEYS.customEngines, data.customEngines);
             if (data.darkSchedule) { store.setDarkSchedule(data.darkSchedule); applyDarkSchedule(); }
+            // v1.4.0
+            if (data.rssFeeds) save(STORAGE_KEYS.rssFeeds, data.rssFeeds);
+            if (data.rssCache) save(STORAGE_KEYS.rssCache, data.rssCache);
+            if (data.syncConfig) store.setSyncConfig(data.syncConfig);
+            if (data.llmConfig) store.setLlmConfig(data.llmConfig);
+            if (data.aiSummaryMode) store.setAiSummaryMode(data.aiSummaryMode);
+            if (data.translateMode) store.setTranslateMode(data.translateMode);
             renderHome();
             renderProfile();
             renderTabs();
@@ -2442,6 +3182,8 @@
         setupNotesPage();
         setupNotesPopover();
         setupGlobalShortcuts();
+        setupRssPage();
+        setupPasswordsPage();
         renderTabs();
 
         $('#search-btn').onclick = handleSearch;

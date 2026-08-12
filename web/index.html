@@ -130,6 +130,9 @@
                     <button id="reading-close" class="icon-btn">✕</button>
                     <span id="reading-title" class="reading-title">阅读模式</span>
                     <button id="reading-tts" class="icon-btn" aria-label="朗读">🔊</button>
+                    <button id="reading-summary" class="icon-btn" aria-label="AI 摘要">🤖</button>
+                    <button id="reading-translate" class="icon-btn" aria-label="划词翻译">🌐</button>
+                    <button id="reading-screenshot" class="icon-btn" aria-label="截图">📸</button>
                     <button id="reading-font-dec" class="icon-btn">A-</button>
                     <button id="reading-font-inc" class="icon-btn">A+</button>
                 </div>
@@ -167,6 +170,16 @@
                 <div class="card list-item" data-action="notes">
                     <span class="icon">📝</span>
                     <span class="title">划线笔记</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="rss">
+                    <span class="icon">📡</span>
+                    <span class="title">RSS 订阅</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="passwords">
+                    <span class="icon">🔑</span>
+                    <span class="title">密码管理</span>
                     <span class="arrow">›</span>
                 </div>
                 <div class="card list-item" data-action="stats">
@@ -232,6 +245,34 @@
             </div>
             <div id="notes-list" class="list"></div>
             <div id="notes-empty" class="empty-state" hidden>暂无笔记<br>在阅读模式中选中文本即可添加笔记</div>
+        </section>
+
+        <!-- ============ RSS 订阅 ============ -->
+        <section id="page-rss" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>RSS 订阅</h2>
+                <button id="rss-add-btn" class="text-btn">＋ 源</button>
+            </header>
+            <div class="filter-bar">
+                <input id="rss-filter" type="text" placeholder="搜索文章..." autocomplete="off">
+            </div>
+            <div id="rss-list" class="list"></div>
+            <div id="rss-empty" class="empty-state" hidden>暂无 RSS 文章<br>点击右上角添加订阅源</div>
+        </section>
+
+        <!-- ============ 密码管理 ============ -->
+        <section id="page-passwords" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>密码管理</h2>
+                <button id="pwd-add-btn" class="text-btn">＋</button>
+            </header>
+            <div class="filter-bar">
+                <input id="pwd-filter" type="text" placeholder="搜索站点..." autocomplete="off">
+            </div>
+            <div id="pwd-list" class="list"></div>
+            <div id="pwd-empty" class="empty-state" hidden>暂无保存的密码<br>点击右上角添加</div>
         </section>
 
         <!-- ============ 数据统计 ============ -->
@@ -304,6 +345,40 @@
                     <span class="setting-value">Ctrl+K 搜索 · Ctrl+D 收藏 · Esc 返回</span>
                 </div>
 
+                <div class="section-label">AI 与翻译</div>
+                <div class="card setting-item">
+                    <span class="setting-label">🤖 AI 摘要模式</span>
+                    <select id="ai-summary-mode" class="setting-select">
+                        <option value="local">本地 TextRank（离线）</option>
+                        <option value="llm">LLM API（需配置）</option>
+                    </select>
+                </div>
+                <div class="card setting-item" data-action="config-llm">
+                    <span class="setting-label">⚙️ LLM API 配置</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item">
+                    <span class="setting-label">🌐 翻译模式</span>
+                    <select id="translate-mode" class="setting-select">
+                        <option value="online">MyMemory 在线</option>
+                        <option value="offline">离线词典</option>
+                    </select>
+                </div>
+
+                <div class="section-label">同步与安全</div>
+                <div class="card setting-item" data-action="config-sync">
+                    <span class="setting-label">☁️ 跨设备同步</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item" data-action="sync-now">
+                    <span class="setting-label">🔄 立即同步</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item" data-action="config-master-pwd">
+                    <span class="setting-label">🔑 设置主密码</span>
+                    <span class="arrow">›</span>
+                </div>
+
                 <div class="section-label">数据管理</div>
                 <div class="card setting-item" data-action="export">
                     <span class="setting-label">📤 导出数据备份</span>
@@ -331,11 +406,11 @@
                 <div class="section-label">关于</div>
                 <div class="card setting-item static">
                     <span class="setting-label">版本</span>
-                    <span class="setting-value">v1.3.1</span>
+                    <span class="setting-value">v1.4.0</span>
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">功能</span>
-                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 标签 · 离线 · TTS · 热力图 · 自定义引擎 · 暗黑定时 · 隐身</span>
+                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 标签 · 离线 · TTS · 热力图 · 自定义引擎 · 暗黑定时 · 隐身 · AI 摘要 · 翻译 · 同步 · RSS · 截图 · 密码</span>
                 </div>
             </div>
         </section>
@@ -385,14 +460,91 @@
         </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="toast" hidden></div>
-
     <!-- 划词笔记浮层 -->
     <div id="note-popover" class="note-popover" hidden>
         <button id="note-add-btn" class="note-popover-btn">📝 添加笔记</button>
     </div>
 
+    <!-- 翻译结果浮层 -->
+    <div id="translate-popover" class="translate-popover" hidden>
+        <div class="tp-header">
+            <span id="tp-lang">翻译</span>
+            <button id="tp-close" class="tp-close">✕</button>
+        </div>
+        <div id="tp-result" class="tp-result">翻译中...</div>
+    </div>
+
+    <!-- AI 摘要面板 -->
+    <div id="summary-panel" class="summary-panel" hidden>
+        <div class="sp-header">
+            <span>🤖 AI 智能摘要</span>
+            <button id="sp-close" class="tp-close">✕</button>
+        </div>
+        <div id="sp-content" class="sp-content"></div>
+    </div>
+
+    <!-- 密码解锁 Modal -->
+    <div id="pwd-unlock-modal" class="modal-overlay" hidden>
+        <div class="modal-card">
+            <h3 id="pwd-unlock-title">🔑 输入主密码</h3>
+            <input id="pwd-unlock-input" type="password" placeholder="主密码" autocomplete="off">
+            <div class="modal-actions">
+                <button id="pwd-unlock-cancel" class="btn-text">取消</button>
+                <button id="pwd-unlock-ok" class="btn-primary">解锁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 同步配置 Modal -->
+    <div id="sync-config-modal" class="modal-overlay" hidden>
+        <div class="modal-card">
+            <h3>☁️ 跨设备同步配置</h3>
+            <div class="setting-item" style="margin:8px 0">
+                <span class="setting-label">同步方式</span>
+                <select id="sync-type" class="setting-select">
+                    <option value="off">关闭</option>
+                    <option value="webdav">WebDAV</option>
+                    <option value="gist">GitHub Gist</option>
+                </select>
+            </div>
+            <input id="sync-url" type="text" placeholder="WebDAV URL 或 Gist ID" autocomplete="off">
+            <input id="sync-user" type="text" placeholder="WebDAV 账号 或 GitHub Token" autocomplete="off" style="margin-top:8px">
+            <input id="sync-pass" type="password" placeholder="WebDAV 密码 或 Gist 文件名" autocomplete="off" style="margin-top:8px">
+            <div class="modal-actions">
+                <button id="sync-cancel" class="btn-text">取消</button>
+                <button id="sync-save" class="btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM API 配置 Modal -->
+    <div id="llm-config-modal" class="modal-overlay" hidden>
+        <div class="modal-card">
+            <h3>🤖 LLM API 配置</h3>
+            <div class="setting-item" style="margin:8px 0">
+                <span class="setting-label">服务商</span>
+                <select id="llm-provider" class="setting-select">
+                    <option value="qianwen">通义千问</option>
+                    <option value="doubao">豆包</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            <input id="llm-api-key" type="password" placeholder="API Key" autocomplete="off">
+            <input id="llm-api-url" type="text" placeholder="API URL（自定义时填写）" autocomplete="off" style="margin-top:8px">
+            <input id="llm-model" type="text" placeholder="模型名（如 qwen-turbo）" autocomplete="off" style="margin-top:8px">
+            <div class="modal-actions">
+                <button id="llm-cancel" class="btn-text">取消</button>
+                <button id="llm-save" class="btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
