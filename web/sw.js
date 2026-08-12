@@ -1,13 +1,14 @@
 /**
  * MultiSearch Browser · Service Worker
- * v1.3.0：缓存静态资源 + 离线回退页
+ * v1.5.0：缓存静态资源 + 离线回退页
  */
-const CACHE_VERSION = 'msb-v1.3.0';
+const CACHE_VERSION = 'msb-v1.5.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './styles.css',
     './app.js',
+    './utils.js',
     './manifest.json',
 ];
 

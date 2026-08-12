@@ -135,6 +135,41 @@
                     <button id="reading-screenshot" class="icon-btn" aria-label="截图">📸</button>
                     <button id="reading-font-dec" class="icon-btn">A-</button>
                     <button id="reading-font-inc" class="icon-btn">A+</button>
+                    <button id="reading-auto-scroll" class="icon-btn" aria-label="自动滚动">⏬</button>
+                    <button id="reading-settings" class="icon-btn" aria-label="阅读设置">⚙</button>
+                </div>
+                <!-- 阅读设置面板 -->
+                <div id="reading-settings-panel" class="reading-settings-panel" hidden>
+                    <div class="rsp-row">
+                        <label>字体</label>
+                        <select id="reading-font-family">
+                            <option value="system">系统默认</option>
+                            <option value="serif">衬线 (宋体)</option>
+                            <option value="sans">无衬线 (黑体)</option>
+                            <option value="mono">等宽</option>
+                        </select>
+                    </div>
+                    <div class="rsp-row">
+                        <label>行距 <span id="reading-line-height-val">1.8</span></label>
+                        <input id="reading-line-height" type="range" min="1.2" max="2.4" step="0.1" value="1.8">
+                    </div>
+                    <div class="rsp-row">
+                        <label>段距 <span id="reading-para-gap-val">16</span>px</label>
+                        <input id="reading-para-gap" type="range" min="4" max="32" step="2" value="16">
+                    </div>
+                    <div class="rsp-row">
+                        <label>主题</label>
+                        <div class="rsp-theme-chips">
+                            <button type="button" class="rsp-theme-chip" data-theme="default">默认</button>
+                            <button type="button" class="rsp-theme-chip" data-theme="sepia">米黄护眼</button>
+                            <button type="button" class="rsp-theme-chip" data-theme="dark">深褐</button>
+                            <button type="button" class="rsp-theme-chip" data-theme="night">暗夜</button>
+                        </div>
+                    </div>
+                    <div class="rsp-row">
+                        <label>滚动速度 <span id="reading-scroll-speed-val">中</span></label>
+                        <input id="reading-scroll-speed" type="range" min="1" max="5" step="1" value="3">
+                    </div>
                 </div>
                 <div id="reading-content" class="reading-content"></div>
             </div>
@@ -545,6 +580,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="utils.js"></script>
+    <!-- ============ v1.5.0: 标签页右键菜单 ============ -->
+    <div id="tab-context-menu" class="context-menu" hidden>
+        <button data-action="close-others">关闭其他</button>
+        <button data-action="close-right">关闭右侧</button>
+        <button data-action="close-left">关闭左侧</button>
+        <button data-action="new-adjacent">新建相邻</button>
+        <button data-action="toggle-pin">固定/取消固定</button>
+        <button data-action="toggle-mute">静音/取消静音</button>
+        <button data-action="close" class="danger">关闭此标签</button>
+    </div>
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

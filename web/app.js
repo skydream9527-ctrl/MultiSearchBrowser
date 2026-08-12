@@ -1,10 +1,13 @@
 /**
  * MultiSearch Browser · Web 版
  * 纯前端实现，localStorage 持久化数据，无后端依赖。
- * v1.2.0：7 引擎 / 并行搜索 / AI 研讨 / 阅读模式 / 统计 / 书签分组 / 语音 / 查找 / 稍后阅读 / 拖拽 / 主题色 / 字号
+ * v1.5.0：阅读深化 / 标签增强 / 翻译缓存 / 安全加固 / 错误监控 / 工具库抽离
  */
 (function () {
     'use strict';
+
+    // ============ 工具库别名（v1.5.0 起逐步委派到 window.MSBUtils） ============
+    const U = window.MSBUtils || {};
 
     // ============ 常量 ============
     const ENGINES = [
@@ -48,6 +51,11 @@
         llmConfig: 'msb_llm_config',
         aiSummaryMode: 'msb_ai_summary_mode',
         translateMode: 'msb_translate_mode',
+        // v1.5.0
+        readingSettings: 'msb_reading_settings',
+        pwdAutoLock: 'msb_pwd_auto_lock',
+        translateCache: 'msb_translate_cache',
+        errorLog: 'msb_error_log',
     };
 
     // 5 种主题色预设
@@ -344,6 +352,42 @@
         setAiSummaryMode: (mode) => save(STORAGE_KEYS.aiSummaryMode, mode),
         getTranslateMode: () => load(STORAGE_KEYS.translateMode, 'online'),
         setTranslateMode: (mode) => save(STORAGE_KEYS.translateMode, mode),
+
+        // v1.5.0: 阅读设置
+        getReadingSettings: () => load(STORAGE_KEYS.readingSettings, {
+            fontFamily: 'system', lineHeight: 1.8, paraGap: 16, theme: 'default', scrollSpeed: 3
+        }),
+        setReadingSettings: (s) => save(STORAGE_KEYS.readingSettings, s),
+
+        // v1.5.0: 密码自动锁屏（分钟，0 = 不自动锁）
+        getPwdAutoLock: () => load(STORAGE_KEYS.pwdAutoLock, 5),
+        setPwdAutoLock: (min) => save(STORAGE_KEYS.pwdAutoLock, min),
+
+        // v1.5.0: 翻译缓存（localStorage 简化版，避免 IndexedDB 复杂性）
+        getTranslateCache: () => load(STORAGE_KEYS.translateCache, {}),
+        setTranslateCache: (obj) => save(STORAGE_KEYS.translateCache, obj),
+        addTranslateCache: (key, value) => {
+            const cache = load(STORAGE_KEYS.translateCache, {});
+            cache[key] = { value, time: Date.now() };
+            // 限制缓存大小 500 条，LRU 简化：按时间排序移除最旧的
+            const keys = Object.keys(cache);
+            if (keys.length > 500) {
+                keys.sort((a, b) => cache[a].time - cache[b].time);
+                for (let i = 0; i < keys.length - 500; i++) delete cache[keys[i]];
+            }
+            save(STORAGE_KEYS.translateCache, cache);
+        },
+        clearTranslateCache: () => save(STORAGE_KEYS.translateCache, {}),
+
+        // v1.5.0: 错误日志（环形 100 条）
+        getErrorLog: () => load(STORAGE_KEYS.errorLog, []),
+        addErrorLog: (entry) => {
+            const log = load(STORAGE_KEYS.errorLog, []);
+            log.unshift({ ...entry, time: new Date().toISOString() });
+            if (log.length > 100) log.length = 100;
+            save(STORAGE_KEYS.errorLog, log);
+        },
+        clearErrorLog: () => save(STORAGE_KEYS.errorLog, []),
 
         clearAllData: () => { Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key)); },
     };
@@ -715,13 +759,28 @@
         const tabs = store.getTabs();
         const activeId = store.getActiveTabId();
         listEl.innerHTML = '';
-        tabs.forEach(tab => {
+        // pinned 排前面，保持相对顺序
+        const sorted = [...tabs].sort((a, b) => {
+            if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+            return 0;
+        });
+        // 若顺序变化则持久化
+        if (sorted.some((t, i) => t.id !== tabs[i].id)) {
+            store.saveTabs(sorted);
+        }
+        sorted.forEach((tab, idx) => {
             const chip = document.createElement('div');
-            const incognitoClass = tab.incognito ? ' incognito' : '';
-            chip.className = 'tab-chip' + (tab.id === activeId ? ' active' : '') + incognitoClass;
+            const classes = ['tab-chip'];
+            if (tab.id === activeId) classes.push('active');
+            if (tab.incognito) classes.push('incognito');
+            if (tab.pinned) classes.push('pinned');
+            if (tab.muted) classes.push('muted');
+            chip.className = classes.join(' ');
+            chip.dataset.tabId = tab.id;
+            chip.draggable = true;
             const prefix = tab.incognito ? '🛡 ' : '';
             const title = tab.title || tab.url || '新标签';
-            const shortTitle = title.length > 16 ? title.slice(0, 16) + '…' : title;
+            const shortTitle = tab.pinned ? '' : (title.length > 16 ? title.slice(0, 16) + '…' : title);
             chip.innerHTML = `
                 <span class="tc-title">${escapeHtml(prefix + shortTitle)}</span>
                 <button class="tc-close" aria-label="关闭">✕</button>
@@ -731,8 +790,110 @@
                 e.stopPropagation();
                 closeTab(tab.id);
             };
+            // 右键菜单
+            chip.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTabContextMenu(e, tab);
+            });
+            // 拖拽排序
+            chip.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/tab-id', String(tab.id));
+                chip.classList.add('dragging');
+            });
+            chip.addEventListener('dragend', () => {
+                chip.classList.remove('dragging');
+                listEl.querySelectorAll('.tab-chip').forEach(c => c.classList.remove('drag-over'));
+            });
+            chip.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                chip.classList.add('drag-over');
+            });
+            chip.addEventListener('dragleave', () => {
+                chip.classList.remove('drag-over');
+            });
+            chip.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const fromId = Number(e.dataTransfer.getData('text/tab-id'));
+                const toId = tab.id;
+                if (fromId && fromId !== toId) reorderTabs(fromId, toId);
+            });
             listEl.appendChild(chip);
         });
+    }
+
+    function reorderTabs(fromId, toId) {
+        const tabs = store.getTabs();
+        const fromIdx = tabs.findIndex(t => t.id === fromId);
+        const toIdx = tabs.findIndex(t => t.id === toId);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const [moved] = tabs.splice(fromIdx, 1);
+        tabs.splice(toIdx, 0, moved);
+        store.saveTabs(tabs);
+        renderTabs();
+    }
+
+    function showTabContextMenu(e, tab) {
+        const menu = $('#tab-context-menu');
+        menu.hidden = false;
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 280) + 'px';
+        menu.dataset.tabId = tab.id;
+        // 点击菜单项
+        const handler = (ev) => {
+            const btn = ev.target.closest('button[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const targetTabId = Number(menu.dataset.tabId);
+            handleTabContextAction(action, targetTabId);
+            menu.hidden = true;
+            document.removeEventListener('click', handler);
+        };
+        setTimeout(() => document.addEventListener('click', handler), 0);
+    }
+
+    function handleTabContextAction(action, tabId) {
+        const tabs = store.getTabs();
+        const tab = tabs.find(t => t.id === tabId);
+        if (!tab) return;
+        const idx = tabs.findIndex(t => t.id === tabId);
+        switch (action) {
+            case 'close':
+                closeTab(tabId);
+                break;
+            case 'close-others':
+                tabs.filter(t => t.id !== tabId).forEach(t => store.deleteTab(t.id));
+                switchTab(tabId);
+                break;
+            case 'close-right':
+                tabs.slice(idx + 1).forEach(t => store.deleteTab(t.id));
+                if (store.getActiveTabId() !== tabId) switchTab(tabId);
+                else renderTabs();
+                break;
+            case 'close-left':
+                tabs.slice(0, idx).forEach(t => store.deleteTab(t.id));
+                if (store.getActiveTabId() !== tabId) switchTab(tabId);
+                else renderTabs();
+                break;
+            case 'new-adjacent': {
+                const list = store.getTabs();
+                const newTab = { id: Date.now(), url: '', title: '新标签', timestamp: Date.now() };
+                list.splice(idx + 1, 0, newTab);
+                store.saveTabs(list);
+                switchTab(newTab.id);
+                $('#wv-url').focus();
+                break;
+            }
+            case 'toggle-pin':
+                store.updateTab(tabId, { pinned: !tab.pinned });
+                renderTabs();
+                showToast(tab.pinned ? '已取消固定' : '📌 已固定');
+                break;
+            case 'toggle-mute':
+                store.updateTab(tabId, { muted: !tab.muted });
+                renderTabs();
+                showToast(tab.muted ? '已取消静音' : '🔇 已静音');
+                break;
+        }
     }
 
     function switchTab(tabId) {
@@ -901,6 +1062,8 @@
     let readingFontSize = 18;
     let ttsUtterance = null;
     let ttsPlaying = false;
+    let autoScrollTimer = null;
+    let readingSettingsOpen = false;
 
     function enterReadingMode() {
         let article = null;
@@ -934,14 +1097,16 @@
             content.innerHTML = `<p style="text-align:center;color:var(--text-secondary);padding:48px 0">⚠️ 该页面无法提取正文（跨域限制或无 article 结构）<br><br>建议直接在原页面阅读。</p>`;
         }
         content.style.fontSize = readingFontSize + 'px';
+        applyReadingSettings(content);
         overlay.hidden = false;
-        // 重置 TTS
+        // 重置 TTS / 自动滚动
         stopTts();
+        stopAutoScroll();
 
         // 还原此 URL 已有的笔记高亮
         restoreNoteMarks(content);
 
-        $('#reading-close').onclick = () => { stopTts(); overlay.hidden = true; };
+        $('#reading-close').onclick = () => { stopTts(); stopAutoScroll(); overlay.hidden = true; };
         $('#reading-font-dec').onclick = () => {
             readingFontSize = Math.max(14, readingFontSize - 2);
             content.style.fontSize = readingFontSize + 'px';
@@ -957,6 +1122,9 @@
         $('#reading-summary').onclick = () => generateSummary(content);
         $('#reading-translate').onclick = () => toggleTranslateMode(content);
         $('#reading-screenshot').onclick = () => captureScreenshot(content);
+        $('#reading-auto-scroll').onclick = () => toggleAutoScroll(content);
+        $('#reading-settings').onclick = () => toggleReadingSettingsPanel();
+        setupReadingSettingsPanel(content);
 
         // 划词监听
         content.onmouseup = (e) => {
@@ -980,6 +1148,121 @@
                 pop.hidden = true;
             }
         };
+    }
+
+    // ============ v1.5.0: 阅读模式深化 ============
+    function applyReadingSettings(content) {
+        const s = store.getReadingSettings();
+        content.dataset.font = s.fontFamily;
+        content.dataset.rtheme = s.theme;
+        content.style.setProperty('--reading-line-height', s.lineHeight);
+        content.style.setProperty('--reading-para-gap', s.paraGap + 'px');
+        content.style.lineHeight = s.lineHeight;
+    }
+
+    function toggleReadingSettingsPanel() {
+        const panel = $('#reading-settings-panel');
+        readingSettingsOpen = !readingSettingsOpen;
+        panel.hidden = !readingSettingsOpen;
+    }
+
+    function setupReadingSettingsPanel(content) {
+        const s = store.getReadingSettings();
+        const panel = $('#reading-settings-panel');
+        // 初始化 UI 值
+        $('#reading-font-family').value = s.fontFamily;
+        $('#reading-line-height').value = s.lineHeight;
+        $('#reading-line-height-val').textContent = s.lineHeight;
+        $('#reading-para-gap').value = s.paraGap;
+        $('#reading-para-gap-val').textContent = s.paraGap;
+        $('#reading-scroll-speed').value = s.scrollSpeed;
+        const speedLabels = ['', '极慢', '慢', '中', '快', '极快'];
+        $('#reading-scroll-speed-val').textContent = speedLabels[s.scrollSpeed];
+        // 主题高亮
+        panel.querySelectorAll('.rsp-theme-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.theme === s.theme);
+        });
+
+        // 事件绑定
+        $('#reading-font-family').onchange = (e) => {
+            s.fontFamily = e.target.value;
+            store.setReadingSettings(s);
+            content.dataset.font = s.fontFamily;
+        };
+        $('#reading-line-height').oninput = (e) => {
+            s.lineHeight = parseFloat(e.target.value);
+            store.setReadingSettings(s);
+            content.style.setProperty('--reading-line-height', s.lineHeight);
+            content.style.lineHeight = s.lineHeight;
+            $('#reading-line-height-val').textContent = s.lineHeight;
+        };
+        $('#reading-para-gap').oninput = (e) => {
+            s.paraGap = parseInt(e.target.value, 10);
+            store.setReadingSettings(s);
+            content.style.setProperty('--reading-para-gap', s.paraGap + 'px');
+            $('#reading-para-gap-val').textContent = s.paraGap;
+        };
+        $('#reading-scroll-speed').oninput = (e) => {
+            s.scrollSpeed = parseInt(e.target.value, 10);
+            store.setReadingSettings(s);
+            $('#reading-scroll-speed-val').textContent = speedLabels[s.scrollSpeed];
+            // 如果正在自动滚动，重启以应用新速度
+            if (autoScrollTimer) {
+                stopAutoScroll();
+                startAutoScroll(content);
+            }
+        };
+        panel.querySelectorAll('.rsp-theme-chip').forEach(chip => {
+            chip.onclick = () => {
+                s.theme = chip.dataset.theme;
+                store.setReadingSettings(s);
+                content.dataset.rtheme = s.theme;
+                panel.querySelectorAll('.rsp-theme-chip').forEach(c => c.classList.toggle('active', c === chip));
+            };
+        });
+        // 点击面板外关闭
+        document.addEventListener('mousedown', function closePanel(e) {
+            if (!readingSettingsOpen) return;
+            if (!panel.contains(e.target) && e.target.id !== 'reading-settings') {
+                readingSettingsOpen = false;
+                panel.hidden = true;
+                document.removeEventListener('mousedown', closePanel);
+            }
+        });
+    }
+
+    function toggleAutoScroll(content) {
+        if (autoScrollTimer) {
+            stopAutoScroll();
+        } else {
+            startAutoScroll(content);
+        }
+    }
+
+    function startAutoScroll(content) {
+        const s = store.getReadingSettings();
+        // 速度档 1-5 对应间隔 100/70/50/30/20 ms，每帧 1px
+        const intervals = [0, 100, 70, 50, 30, 20];
+        const interval = intervals[s.scrollSpeed] || 50;
+        const btn = $('#reading-auto-scroll');
+        btn.classList.add('auto-scroll-active');
+        autoScrollTimer = setInterval(() => {
+            content.scrollTop += 1;
+            // 到底自动停止
+            if (content.scrollTop + content.clientHeight >= content.scrollHeight - 2) {
+                stopAutoScroll();
+                showToast('已滚动到底部');
+            }
+        }, interval);
+    }
+
+    function stopAutoScroll() {
+        if (autoScrollTimer) {
+            clearInterval(autoScrollTimer);
+            autoScrollTimer = null;
+            const btn = $('#reading-auto-scroll');
+            if (btn) btn.classList.remove('auto-scroll-active');
+        }
     }
 
     // ============ TTS 朗读 ============
@@ -1174,11 +1457,25 @@
         pop.style.top = Math.max(8, y + 16) + 'px';
 
         const mode = store.getTranslateMode();
+        let html;
         if (mode === 'offline') {
-            result.innerHTML = await offlineTranslate(text, isZh);
+            html = await offlineTranslate(text, isZh);
         } else {
-            result.innerHTML = await onlineTranslate(text, isZh, targetLang);
+            // v1.5.0: 先查缓存
+            const cacheKey = `${text}|${isZh ? 'zh' : 'en'}|${targetLang}`;
+            const cache = store.getTranslateCache();
+            if (cache[cacheKey]) {
+                html = cache[cacheKey].value + '<div style="font-size:11px;color:var(--gray)">via 缓存</div>';
+            } else {
+                html = await onlineTranslate(text, isZh, targetLang);
+                // 入库（成功翻译才缓存）
+                if (!html.includes('❌') && !html.includes('翻译失败')) {
+                    const cacheInner = html.replace(/<div style="font-size:11px;color:var\(--gray\)">via MyMemory API<\/div>/, '').trim();
+                    store.addTranslateCache(cacheKey, cacheInner);
+                }
+            }
         }
+        result.innerHTML = html;
 
         $('#tp-close').onclick = () => { pop.hidden = true; };
     }
@@ -1341,6 +1638,8 @@
 
     // ============ v1.4.0: 密码管理 ============
     let masterPwdSession = null; // 内存中保留，关闭页面失效
+    let lastPwdActivity = 0; // v1.5.0: 自动锁屏时间戳
+    let autoLockTimer = null;
 
     function renderPasswords(filter = '') {
         const listEl = $('#pwd-list');
@@ -1394,9 +1693,16 @@
             `;
             card.querySelector('[data-act="copy"]').onclick = (e) => {
                 e.stopPropagation();
+                touchPwdActivity();
                 navigator.clipboard.writeText(p.password).then(() => {
-                    showToast('📋 密码已复制（10 秒后清空剪贴板）');
-                    setTimeout(() => navigator.clipboard.writeText(''), 10000);
+                    showToast('📋 密码已复制（30 秒后自动清空剪贴板）');
+                    // v1.5.0: 30 秒后清空剪贴板
+                    setTimeout(() => {
+                        navigator.clipboard.writeText('').catch(() => {});
+                        showToast('🧹 剪贴板已清空');
+                    }, 30000);
+                }).catch(() => {
+                    showToast('❌ 无法访问剪贴板');
                 });
             };
             card.querySelector('[data-act="edit"]').onclick = (e) => {
@@ -1450,6 +1756,14 @@
             const newPwd = await inputDialog('密码（留空自动生成）', password);
             if (newPwd === null) return;
             const finalPwd = newPwd || generatePassword(16);
+            // v1.5.0: 显示密码强度
+            const strength = evaluatePasswordStrength(finalPwd);
+            if (strength.score < 2) {
+                const proceed = await confirmDialog('密码强度提示', `当前密码强度：${strength.label}（评分 ${strength.score}/4）\n弱密码容易被破解，建议使用更复杂的密码。\n\n是否仍然使用此密码？`);
+                if (!proceed) return;
+            } else {
+                showToast(`密码强度：${strength.label}`);
+            }
             const list = store.loadPasswords(masterPwdSession) || [];
             if (existing) {
                 const idx = list.findIndex(x => x.id === existing.id);
@@ -1485,6 +1799,7 @@
             const pwd = input.value;
             if (store.verifyMasterPwd(pwd)) {
                 masterPwdSession = pwd;
+                touchPwdActivity();
                 cleanup();
                 showToast('✅ 已解锁');
                 if (callback) callback();
@@ -1520,7 +1835,137 @@
         // 清除旧密码
         save(STORAGE_KEYS.passwords, null);
         masterPwdSession = pwd;
+        touchPwdActivity();
         showToast('✅ 主密码已设置');
+    }
+
+    // ============ v1.5.0: 安全加固 ============
+    function touchPwdActivity() {
+        lastPwdActivity = Date.now();
+        restartAutoLockTimer();
+    }
+
+    function restartAutoLockTimer() {
+        if (autoLockTimer) clearTimeout(autoLockTimer);
+        const minutes = store.getPwdAutoLock();
+        if (!masterPwdSession || !minutes || minutes <= 0) return;
+        autoLockTimer = setTimeout(() => {
+            if (masterPwdSession && Date.now() - lastPwdActivity >= minutes * 60 * 1000 - 1000) {
+                masterPwdSession = null;
+                showToast('🔒 已自动锁屏，请重新输入主密码');
+                // 如果当前在密码页，刷新视图
+                if ($('#page-passwords').classList.contains('active')) renderPasswords();
+            }
+        }, minutes * 60 * 1000);
+    }
+
+    // 用户活动监听（仅在解锁状态下重置计时器）
+    function setupActivityMonitor() {
+        ['click', 'keydown', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (masterPwdSession) {
+                    // 仅在密码页或相关操作时重置，避免全局频繁重置
+                    // 简化：每次活动都更新
+                    lastPwdActivity = Date.now();
+                    restartAutoLockTimer();
+                }
+            }, { passive: true });
+        });
+    }
+
+    // 密码强度评估：委派到 MSBUtils（v1.5.0 起统一工具库）
+    function evaluatePasswordStrength(pwd) {
+        if (U.evaluatePasswordStrength) return U.evaluatePasswordStrength(pwd);
+        if (!pwd) return { score: 0, label: '空' };
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (pwd.length >= 12) score++;
+        if (pwd.length >= 16) score++;
+        const variety = [
+            /[a-z]/.test(pwd), /[A-Z]/.test(pwd), /\d/.test(pwd), /[^a-zA-Z0-9]/.test(pwd)
+        ].filter(Boolean).length;
+        if (variety >= 2) score++;
+        if (variety >= 3) score++;
+        const weak = ['123456', 'password', 'qwerty', '111111', '000000', 'abc123'];
+        if (weak.includes(pwd.toLowerCase())) score = 0;
+        score = Math.min(4, score);
+        const labels = ['弱', '一般', '中等', '强', '非常强'];
+        const colors = ['#F44336', '#FF9800', '#FFC107', '#8BC34A', '#4CAF50'];
+        return { score, label: labels[score], color: colors[score] };
+    }
+
+    // ============ v1.5.0: 错误监控 ============
+    function setupErrorMonitor() {
+        window.addEventListener('error', (e) => {
+            store.addErrorLog({
+                type: 'js',
+                message: e.message || '未知错误',
+                filename: e.filename || '',
+                line: e.lineno || 0,
+                col: e.colno || 0,
+                stack: e.error && e.error.stack ? String(e.error.stack).slice(0, 500) : ''
+            });
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+            const reason = e.reason;
+            store.addErrorLog({
+                type: 'promise',
+                message: reason && reason.message ? reason.message : String(reason || '未处理的 Promise 拒绝'),
+                filename: '',
+                line: 0,
+                col: 0,
+                stack: reason && reason.stack ? String(reason.stack).slice(0, 500) : ''
+            });
+        });
+    }
+
+    function showErrorLog() {
+        const log = store.getErrorLog();
+        const modal = $('#pwd-unlock-modal'); // 复用通用 modal
+        if (!modal) return;
+        $('#pwd-unlock-title').textContent = `📜 错误日志（最近 ${log.length} 条）`;
+        const body = modal.querySelector('.modal-body') || modal.querySelector('div');
+        // 临时把 modal-body 替换为日志列表
+        let logHtml = '';
+        if (log.length === 0) {
+            logHtml = '<div style="text-align:center;padding:32px;color:var(--text-secondary)">🎉 暂无错误日志</div>';
+        } else {
+            logHtml = '<div style="max-height:400px;overflow-y:auto">';
+            log.forEach(entry => {
+                logHtml += `
+                    <div style="padding:8px 0;border-bottom:1px solid var(--divider);font-size:12px">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                            <span style="color:${entry.type === 'promise' ? '#FF9800' : '#F44336'};font-weight:500">[${entry.type}] ${escapeHtml(entry.message)}</span>
+                            <span style="color:var(--gray)">${new Date(entry.time).toLocaleString()}</span>
+                        </div>
+                        ${entry.filename ? `<div style="color:var(--text-secondary)">${escapeHtml(entry.filename)}:${entry.line}:${entry.col}</div>` : ''}
+                        ${entry.stack ? `<pre style="margin-top:4px;color:var(--text-secondary);font-size:11px;white-space:pre-wrap;max-height:80px;overflow-y:auto">${escapeHtml(entry.stack)}</pre>` : ''}
+                    </div>`;
+            });
+            logHtml += '</div>';
+        }
+        // 简化：直接用 modal 容器
+        modal.querySelectorAll('input, .modal-actions').forEach(el => el.style.display = 'none');
+        const logContainer = document.createElement('div');
+        logContainer.id = 'error-log-content';
+        logContainer.innerHTML = logHtml;
+        if (!$('#error-log-content')) {
+            modal.querySelector('.modal-card, .modal-body, div').appendChild(logContainer);
+        } else {
+            $('#error-log-content').innerHTML = logHtml;
+        }
+        modal.hidden = false;
+        const ok = $('#pwd-unlock-ok');
+        ok.textContent = '关闭';
+        ok.style.display = '';
+        ok.onclick = () => {
+            modal.hidden = true;
+            // 恢复显示
+            modal.querySelectorAll('input, .modal-actions').forEach(el => el.style.display = '');
+            ok.textContent = '确定';
+            ok.onclick = null;
+            if ($('#error-log-content')) $('#error-log-content').remove();
+        };
     }
 
     // ============ v1.4.0: 跨设备同步 ============
@@ -2173,6 +2618,19 @@
                 else if (action === 'config-sync') showSyncConfig();
                 else if (action === 'sync-now') syncNow();
                 else if (action === 'config-master-pwd') setupMasterPwd();
+                else if (action === 'clear-translate-cache') {
+                    if (await confirmDialog('清空翻译缓存', '将清除所有已缓存的翻译结果，下次查询将重新请求 API。确定吗？')) {
+                        store.clearTranslateCache();
+                        showToast('翻译缓存已清空');
+                    }
+                }
+                else if (action === 'view-error-log') showErrorLog();
+                else if (action === 'clear-error-log') {
+                    if (await confirmDialog('清空错误日志', '确定清除所有错误日志吗？')) {
+                        store.clearErrorLog();
+                        showToast('错误日志已清空');
+                    }
+                }
             };
         });
     }
@@ -3184,6 +3642,8 @@
         setupGlobalShortcuts();
         setupRssPage();
         setupPasswordsPage();
+        setupActivityMonitor();
+        setupErrorMonitor();
         renderTabs();
 
         $('#search-btn').onclick = handleSearch;

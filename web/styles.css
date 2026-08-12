@@ -827,6 +827,103 @@ a { color: inherit; text-decoration: none; }
 .reading-content a { color: var(--primary); }
 .reading-content blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-secondary); margin: 12px 0; }
 
+/* ============ v1.5.0 阅读模式深化 ============ */
+.reading-content {
+    --reading-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    --reading-line-height: 1.8;
+    --reading-para-gap: 16px;
+    font-family: var(--reading-font);
+    line-height: var(--reading-line-height);
+}
+.reading-content p { margin-bottom: var(--reading-para-gap); }
+.reading-content[data-font="serif"] { --reading-font: "Songti SC", "SimSun", "Noto Serif CJK SC", serif; }
+.reading-content[data-font="sans"] { --reading-font: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif; }
+.reading-content[data-font="mono"] { --reading-font: "SF Mono", Menlo, Consolas, monospace; }
+
+/* 阅读主题 */
+.reading-content[data-rtheme="sepia"] {
+    background: #F5F0E6;
+    color: #5B4636;
+}
+.reading-content[data-rtheme="sepia"] a { color: #A0522D; }
+.reading-content[data-rtheme="sepia"] blockquote { border-color: #A0522D; color: #6B5644; }
+
+.reading-content[data-rtheme="dark"] {
+    background: #2A2520;
+    color: #D4C5B0;
+}
+.reading-content[data-rtheme="dark"] a { color: #D4A574; }
+.reading-content[data-rtheme="dark"] blockquote { border-color: #D4A574; color: #B0997A; }
+
+.reading-content[data-rtheme="night"] {
+    background: #1A1A1A;
+    color: #B0B0B0;
+}
+.reading-content[data-rtheme="night"] a { color: #64B5F6; }
+.reading-content[data-rtheme="night"] blockquote { border-color: #64B5F6; color: #888; }
+
+/* 阅读设置面板 */
+.reading-settings-panel {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    width: 280px;
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 16px;
+    z-index: 510;
+    border: 1px solid var(--divider);
+}
+.reading-settings-panel[hidden] { display: none; }
+.reading-settings-panel .rsp-row {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--divider);
+}
+.reading-settings-panel .rsp-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.reading-settings-panel label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.reading-settings-panel select,
+.reading-settings-panel input[type="range"] {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--gray-light);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.reading-settings-panel .rsp-theme-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.reading-settings-panel .rsp-theme-chip {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--divider);
+    background: var(--white);
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+}
+.reading-settings-panel .rsp-theme-chip.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 500;
+}
+
+/* 自动滚动激活态 */
+.reading-toolbar .icon-btn.auto-scroll-active {
+    background: var(--primary);
+    color: var(--white);
+}
+
 /* ============ 稍后阅读 ============ */
 .later-item {
     display: flex;
@@ -972,6 +1069,45 @@ a { color: inherit; text-decoration: none; }
     cursor: pointer;
     flex-shrink: 0;
 }
+
+/* v1.5.0: 固定/静音/拖拽 */
+.tab-chip.pinned {
+    max-width: 36px;
+    padding: 0 6px;
+    background: var(--primary);
+    color: var(--white);
+}
+.tab-chip.pinned .tc-title::before { content: "📌 "; }
+.tab-chip.pinned .tc-close { display: none; }
+.tab-chip.muted .tc-title::after { content: " 🔇"; }
+.tab-chip.dragging { opacity: 0.4; }
+.tab-chip.drag-over { outline: 2px dashed var(--primary); outline-offset: -2px; }
+
+/* v1.5.0: 通用右键菜单 */
+.context-menu {
+    position: fixed;
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    padding: 4px 0;
+    z-index: 1000;
+    min-width: 160px;
+    border: 1px solid var(--divider);
+}
+.context-menu[hidden] { display: none; }
+.context-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.context-menu button:hover { background: var(--gray-light); }
+.context-menu button.danger { color: var(--accent); }
 
 /* ============ v1.3.0: 聚合搜索结果 ============ */
 .aggregated-item {
