@@ -35,6 +35,9 @@
         tabs: 'msb_tabs',
         activeTabId: 'msb_active_tab_id',
         scrollProgress: 'msb_scroll_progress',
+        // v1.3.1
+        customEngines: 'msb_custom_engines',
+        darkSchedule: 'msb_dark_schedule',
     };
 
     // 5 种主题色预设
@@ -255,8 +258,31 @@
             save(STORAGE_KEYS.scrollProgress, map);
         },
 
+        // ============ v1.3.1 ============
+        // 自定义引擎
+        getCustomEngines: () => load(STORAGE_KEYS.customEngines, []),
+        addCustomEngine: (name, searchUrl, color) => {
+            const list = store.getCustomEngines();
+            const id = 'custom_' + Date.now();
+            list.push({ id, name, searchUrl, color: color || '#757575', custom: true });
+            save(STORAGE_KEYS.customEngines, list);
+            return id;
+        },
+        deleteCustomEngine: (id) => {
+            save(STORAGE_KEYS.customEngines, store.getCustomEngines().filter(e => e.id !== id));
+        },
+
+        // 暗黑定时
+        getDarkSchedule: () => load(STORAGE_KEYS.darkSchedule, 'off'),
+        setDarkSchedule: (mode) => save(STORAGE_KEYS.darkSchedule, mode),
+
         clearAllData: () => { Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key)); },
     };
+
+    // 获取所有引擎（内置 + 自定义）
+    function getAllEngines() {
+        return [...ENGINES, ...store.getCustomEngines()];
+    }
 
     // ============ 主题（深色 + 主题色） ============
     function applyTheme(theme) {
@@ -313,9 +339,10 @@
     // ============ 首页 ============
     function renderHome() {
         const selected = store.getSelectedEngine();
+        const allEngines = getAllEngines();
         const chipsEl = $('#engine-chips');
         chipsEl.innerHTML = '';
-        ENGINES.forEach(engine => {
+        allEngines.forEach(engine => {
             const chip = document.createElement('button');
             chip.className = 'chip' + (engine.id === selected ? ' active' : '');
             chip.textContent = engine.name;
@@ -328,7 +355,7 @@
 
         const quickEl = $('#quick-links');
         quickEl.innerHTML = '';
-        ENGINES.forEach(engine => {
+        allEngines.forEach(engine => {
             const link = document.createElement('div');
             link.className = 'quick-link';
             link.innerHTML = `
@@ -365,7 +392,8 @@
         store.addSearchHistory(query);
         // 更新 AI 多源研讨面板
         renderAiSummary(query);
-        const engine = ENGINES.find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
+        const allEngines = getAllEngines();
+        const engine = allEngines.find(e => e.id === store.getSelectedEngine()) || allEngines[0];
         const url = engine.searchUrl + encodeURIComponent(query);
         openWebview(url, -1);
     }
@@ -482,7 +510,8 @@
             let title = '';
             try { title = frame.contentDocument.title || ''; } catch { title = ''; }
             currentWebview.title = title;
-            if (currentWebview.url) {
+            // 隐身模式不记录历史
+            if (currentWebview.url && !currentWebview.incognito) {
                 store.addHistory(title || currentWebview.url, currentWebview.url);
             }
             // 更新 tab 元数据
@@ -499,25 +528,27 @@
                     title: title || currentWebview.url,
                 });
             }
-            // 恢复阅读进度
-            try {
-                const doc = frame.contentDocument;
-                if (doc && currentWebview.url) {
-                    const saved = store.getScrollProgress(currentWebview.url);
-                    if (saved > 0 && saved < 0.99) {
-                        const max = doc.documentElement.scrollHeight - frame.clientHeight;
-                        if (max > 0) {
-                            frame.contentWindow.scrollTo(0, saved * max);
-                            showToast(`已恢复到 ${Math.round(saved * 100)}%`);
+            // 恢复阅读进度（隐身模式跳过）
+            if (!currentWebview.incognito) {
+                try {
+                    const doc = frame.contentDocument;
+                    if (doc && currentWebview.url) {
+                        const saved = store.getScrollProgress(currentWebview.url);
+                        if (saved > 0 && saved < 0.99) {
+                            const max = doc.documentElement.scrollHeight - frame.clientHeight;
+                            if (max > 0) {
+                                frame.contentWindow.scrollTo(0, saved * max);
+                                showToast(`已恢复到 ${Math.round(saved * 100)}%`);
+                            }
                         }
                     }
-                }
-            } catch {}
+                } catch {}
+            }
         });
 
-        // 阅读进度监听（节流保存）
-        frame.contentWindow && frame.contentWindow.addEventListener('scroll', () => {}, { passive: true });
+        // 阅读进度监听（节流保存，隐身模式跳过）
         frame.addEventListener('load', () => {
+            if (currentWebview.incognito) return;
             try {
                 const cw = frame.contentWindow;
                 if (!cw) return;
@@ -615,11 +646,13 @@
         listEl.innerHTML = '';
         tabs.forEach(tab => {
             const chip = document.createElement('div');
-            chip.className = 'tab-chip' + (tab.id === activeId ? ' active' : '');
+            const incognitoClass = tab.incognito ? ' incognito' : '';
+            chip.className = 'tab-chip' + (tab.id === activeId ? ' active' : '') + incognitoClass;
+            const prefix = tab.incognito ? '🛡 ' : '';
             const title = tab.title || tab.url || '新标签';
             const shortTitle = title.length > 16 ? title.slice(0, 16) + '…' : title;
             chip.innerHTML = `
-                <span class="tc-title">${escapeHtml(shortTitle)}</span>
+                <span class="tc-title">${escapeHtml(prefix + shortTitle)}</span>
                 <button class="tc-close" aria-label="关闭">✕</button>
             `;
             chip.onclick = () => switchTab(tab.id);
@@ -636,11 +669,20 @@
         const tab = tabs.find(t => t.id === tabId);
         if (!tab) return;
         store.setActiveTabId(tabId);
-        currentWebview = { url: tab.url, title: tab.title || '', windowId: -1, tabId };
+        currentWebview = {
+            url: tab.url,
+            title: tab.title || '',
+            windowId: -1,
+            tabId,
+            incognito: !!tab.incognito
+        };
         $('#wv-url').value = tab.url;
         $('#wv-fallback').hidden = true;
         $('#wv-frame').src = tab.url;
         $('#wv-progress').hidden = false;
+        // 隐身 toolbar 标识
+        const tb = $('.webview-toolbar');
+        if (tb) tb.classList.toggle('incognito', !!tab.incognito);
         clearTimeout(frameLoadTimeout);
         frameLoadTimeout = setTimeout(() => showWebviewFallback(tab.url), 3000);
         updateBookmarkIcon();
@@ -786,6 +828,8 @@
 
     // ============ 阅读模式 ============
     let readingFontSize = 18;
+    let ttsUtterance = null;
+    let ttsPlaying = false;
 
     function enterReadingMode() {
         let article = null;
@@ -820,11 +864,13 @@
         }
         content.style.fontSize = readingFontSize + 'px';
         overlay.hidden = false;
+        // 重置 TTS
+        stopTts();
 
         // 还原此 URL 已有的笔记高亮
         restoreNoteMarks(content);
 
-        $('#reading-close').onclick = () => { overlay.hidden = true; };
+        $('#reading-close').onclick = () => { stopTts(); overlay.hidden = true; };
         $('#reading-font-dec').onclick = () => {
             readingFontSize = Math.max(14, readingFontSize - 2);
             content.style.fontSize = readingFontSize + 'px';
@@ -832,6 +878,10 @@
         $('#reading-font-inc').onclick = () => {
             readingFontSize = Math.min(28, readingFontSize + 2);
             content.style.fontSize = readingFontSize + 'px';
+        };
+        $('#reading-tts').onclick = () => {
+            if (ttsPlaying) stopTts();
+            else startTts(content);
         };
 
         // 划词监听
@@ -850,6 +900,57 @@
                 pop.hidden = true;
             }
         };
+    }
+
+    // ============ TTS 朗读 ============
+    function startTts(container) {
+        if (!('speechSynthesis' in window)) {
+            showToast('当前浏览器不支持语音合成');
+            return;
+        }
+        const text = (container.innerText || '').trim();
+        if (!text) {
+            showToast('没有可朗读的内容');
+            return;
+        }
+        // 截断至 30000 字符避免过长
+        const truncated = text.length > 30000 ? text.slice(0, 30000) + '...' : text;
+        const utter = new SpeechSynthesisUtterance(truncated);
+        utter.lang = 'zh-CN';
+        utter.rate = 1;
+        utter.pitch = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+        if (zhVoice) utter.voice = zhVoice;
+        utter.onstart = () => {
+            ttsPlaying = true;
+            const btn = $('#reading-tts');
+            if (btn) btn.classList.add('reading-tts-active');
+            showToast('🔊 开始朗读');
+        };
+        utter.onend = () => {
+            ttsPlaying = false;
+            const btn = $('#reading-tts');
+            if (btn) btn.classList.remove('reading-tts-active');
+            showToast('朗读结束');
+        };
+        utter.onerror = () => {
+            ttsPlaying = false;
+            const btn = $('#reading-tts');
+            if (btn) btn.classList.remove('reading-tts-active');
+            showToast('朗读出错');
+        };
+        ttsUtterance = utter;
+        window.speechSynthesis.speak(utter);
+    }
+
+    function stopTts() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+        ttsPlaying = false;
+        const btn = $('#reading-tts');
+        if (btn) btn.classList.remove('reading-tts-active');
     }
 
     // 还原已存笔记高亮
@@ -925,12 +1026,17 @@
         if (/^https?:\/\//i.test(input)) return input;
         const looksLikeDomain = input.includes('.') && !input.includes(' ');
         if (looksLikeDomain) return 'https://' + input;
-        const engine = ENGINES.find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
+        const allEngines = getAllEngines();
+        const engine = allEngines.find(e => e.id === store.getSelectedEngine()) || allEngines[0];
         return engine.searchUrl + encodeURIComponent(input);
     }
 
     // ============ 多窗口 ============
     let dragSrcId = null;
+
+    function findEngine(url) {
+        return getAllEngines().find(e => url && url.startsWith(e.searchUrl));
+    }
 
     function renderWindows() {
         const list = store.getWindows();
@@ -943,7 +1049,7 @@
             card.className = 'list-item-card';
             card.draggable = true;
             card.dataset.winId = win.id;
-            const engine = ENGINES.find(e => win.url.startsWith(e.searchUrl));
+            const engine = findEngine(win.url);
             const iconChar = engine ? engine.name[0] : '🌐';
             const iconColor = engine ? engine.color : '#757575';
             card.innerHTML = `
@@ -1029,7 +1135,7 @@
         filtered.forEach(h => {
             const card = document.createElement('div');
             card.className = 'list-item-card';
-            const engine = ENGINES.find(e => h.url.startsWith(e.searchUrl));
+            const engine = findEngine(h.url);
             const iconChar = engine ? engine.name[0] : '🌐';
             const iconColor = engine ? engine.color : '#757575';
             card.innerHTML = `
@@ -1132,7 +1238,7 @@
     function buildBookmarkCard(b, filter, folder) {
         const card = document.createElement('div');
         card.className = 'list-item-card';
-        const engine = ENGINES.find(e => b.url.startsWith(e.searchUrl));
+        const engine = findEngine(b.url);
         const iconChar = engine ? engine.name[0] : '🌐';
         const iconColor = engine ? engine.color : '#FF5722';
         card.innerHTML = `
@@ -1215,18 +1321,22 @@
 
     // ============ 设置页 ============
     function renderSettings() {
-        // 默认引擎下拉
+        // 默认引擎下拉（含自定义引擎）
         const select = $('#setting-default-engine');
         select.innerHTML = '';
-        ENGINES.forEach(e => {
+        getAllEngines().forEach(e => {
             const opt = document.createElement('option');
             opt.value = e.id;
-            opt.textContent = e.name;
+            opt.textContent = e.name + (e.custom ? ' (自定义)' : '');
             opt.selected = e.id === store.getSelectedEngine();
             select.appendChild(opt);
         });
         // 深色模式开关
         $('#dark-mode-toggle').checked = store.getTheme() === 'dark';
+
+        // 暗黑定时
+        const schedSel = $('#dark-mode-schedule');
+        if (schedSel) schedSel.value = store.getDarkSchedule();
 
         // 主题色选择器
         const picker = $('#theme-color-picker');
@@ -1247,42 +1357,286 @@
                 picker.appendChild(dot);
             });
         }
+
+        // 自定义引擎列表
+        renderCustomEngineList();
+    }
+
+    function renderCustomEngineList() {
+        const listEl = $('#custom-engine-list');
+        if (!listEl) return;
+        const customEngines = store.getCustomEngines();
+        listEl.innerHTML = '';
+        if (customEngines.length === 0) {
+            listEl.innerHTML = '<div style="font-size:12px;color:var(--text-secondary);padding:8px;text-align:center">暂无自定义引擎，点击「添加」</div>';
+            return;
+        }
+        customEngines.forEach(e => {
+            const item = document.createElement('div');
+            item.className = 'custom-engine-item';
+            item.innerHTML = `
+                <div class="ce-info">
+                    <div class="ce-name">${escapeHtml(e.name)}</div>
+                    <div class="ce-url">${escapeHtml(e.searchUrl)}</div>
+                </div>
+                <span class="ce-del" data-id="${e.id}">✕</span>
+            `;
+            item.querySelector('.ce-del').onclick = async (ev) => {
+                ev.stopPropagation();
+                const ok = await confirmDialog('删除引擎', `确定要删除自定义引擎「${e.name}」吗？`);
+                if (ok) {
+                    store.deleteCustomEngine(e.id);
+                    renderCustomEngineList();
+                    renderSettings();
+                    renderHome();
+                    showToast('已删除');
+                }
+            };
+            listEl.appendChild(item);
+        });
     }
 
     function setupSettingsPage() {
-        // 默认引擎切换
         $('#setting-default-engine').onchange = (e) => {
             store.setSelectedEngine(e.target.value);
-            showToast('默认引擎已切换');
+            showToast('默认引擎已更新');
         };
-        // 深色模式
         $('#dark-mode-toggle').onchange = (e) => {
-            store.setTheme(e.target.checked ? 'dark' : 'light');
-            applyTheme(store.getTheme());
-        };
-        // 导出数据
-        $('[data-action="export"]').onclick = () => exportData();
-        // 导入数据
-        $('[data-action="import"]').onclick = () => $('#import-file').click();
-        $('#import-file').onchange = (e) => importData(e.target.files[0]);
-        // 清除所有数据
-        $('[data-action="clear-all"]').onclick = async () => {
-            const ok = await confirmDialog('清除所有数据', '将清除所有书签、历史、窗口、搜索历史和头像。此操作不可撤销，确定继续吗？');
-            if (ok) {
-                store.clearAllData();
-                initTheme();
-                renderHome();
-                renderProfile();
-                renderAiSummary('');
-                showToast('所有数据已清除');
+            // 手动切换会关闭暗黑定时
+            if (store.getDarkSchedule() !== 'off') {
+                store.setDarkSchedule('off');
+                $('#dark-mode-schedule').value = 'off';
             }
+            const theme = e.target.checked ? 'dark' : 'light';
+            store.setTheme(theme);
+            applyTheme(theme);
         };
+        $('#dark-mode-schedule').onchange = (e => {
+            store.setDarkSchedule(e.target.value);
+            applyDarkSchedule();
+            showToast('暗黑定时已更新');
+        });
+        $('#add-engine-btn').onclick = async () => {
+            const name = await inputDialog('引擎名称（如：知乎）', '');
+            if (!name) return;
+            const searchUrl = await inputDialog('搜索 URL 模板（关键词用 {q} 占位）', 'https://www.zhihu.com/search?q={q}');
+            if (!searchUrl) return;
+            if (!searchUrl.includes('{q}')) {
+                showToast('URL 必须包含 {q} 占位符');
+                return;
+            }
+            // 替换占位符为实际拼接形式
+            const finalUrl = searchUrl.replace('{q}', '');
+            const color = await inputDialog('主题色（#RRGGBB，可留空）', '#757575');
+            store.addCustomEngine(name, finalUrl, color || '#757575');
+            renderCustomEngineList();
+            renderSettings();
+            renderHome();
+            showToast('自定义引擎已添加');
+        };
+        $('#import-file').onchange = (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; };
+        $('#import-bookmarks-file').onchange = (e) => { if (e.target.files[0]) importBookmarksHtml(e.target.files[0]); e.target.value = ''; };
+
+        $$('[data-action]').forEach(el => {
+            if (el.id === 'setting-dark-mode') return;
+            el.onclick = () => {
+                const action = el.dataset.action;
+                if (action === 'export') exportData();
+                else if (action === 'import') $('#import-file').click();
+                else if (action === 'export-bookmarks-html') exportBookmarksHtml();
+                else if (action === 'import-bookmarks-html') $('#import-bookmarks-file').click();
+                else if (action === 'clear-all') clearAllData();
+                else if (action === 'open-incognito') openIncognito();
+            };
+        });
+    }
+
+    // ============ 暗黑定时 ============
+    function applyDarkSchedule() {
+        const mode = store.getDarkSchedule();
+        if (mode === 'off') return;
+        if (mode === 'auto') {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            const theme = mq.matches ? 'dark' : 'light';
+            store.setTheme(theme);
+            applyTheme(theme);
+            mq.addEventListener('change', (e) => {
+                const t = e.matches ? 'dark' : 'light';
+                store.setTheme(t);
+                applyTheme(t);
+            });
+        } else if (mode === 'time') {
+            const h = new Date().getHours();
+            const theme = (h >= 18 || h < 6) ? 'dark' : 'light';
+            store.setTheme(theme);
+            applyTheme(theme);
+            // 每分钟检查一次
+            clearInterval(applyDarkSchedule._timer);
+            applyDarkSchedule._timer = setInterval(() => {
+                const hh = new Date().getHours();
+                const t = (hh >= 18 || hh < 6) ? 'dark' : 'light';
+                if (store.getTheme() !== t) {
+                    store.setTheme(t);
+                    applyTheme(t);
+                }
+            }, 60000);
+        }
+    }
+
+    // ============ 隐身窗口 ============
+    function openIncognito() {
+        const allEngines = getAllEngines();
+        const engine = allEngines.find(e => e.id === store.getSelectedEngine()) || allEngines[0];
+        // 创建隐身 tab
+        const tab = store.addTab(engine.searchUrl, '🛡 隐身');
+        store.updateTab(tab.id, { incognito: true });
+        store.setActiveTabId(tab.id);
+        currentWebview = { url: engine.searchUrl, title: '🛡 隐身', windowId: -1, tabId: tab.id, incognito: true };
+        $('#wv-url').value = engine.searchUrl;
+        $('#wv-fallback').hidden = true;
+        $('#wv-frame').src = engine.searchUrl;
+        $('#wv-progress').hidden = false;
+        // 标记 toolbar
+        const tb = $('.webview-toolbar');
+        if (tb) tb.classList.add('incognito');
+        clearTimeout(frameLoadTimeout);
+        frameLoadTimeout = setTimeout(() => showWebviewFallback(engine.searchUrl), 3000);
+        updateBookmarkIcon();
+        renderTabs();
+        navigate('webview');
+        showToast('🛡 已进入隐身模式（不记录历史）');
+    }
+
+    // ============ 书签 HTML 互通 ============
+    function exportBookmarksHtml() {
+        const bookmarks = store.getBookmarks();
+        const folders = store.getBookmarkFolders();
+        const now = new Date().getTime();
+        const folderMap = {};
+        folders.forEach(f => folderMap[f] = []);
+        const uncategorized = [];
+        bookmarks.forEach(b => {
+            if (b.folder && folderMap[b.folder]) {
+                folderMap[b.folder].push(b);
+            } else {
+                uncategorized.push(b);
+            }
+        });
+        const formatTime = (ts) => new Date(ts).toISOString();
+        const renderLink = (b) => `        <DT><A HREF="${escapeHtml(b.url)}" ADD_DATE="${Math.floor(b.timestamp / 1000)}" LAST_MODIFIED="${Math.floor(b.timestamp / 1000)}">${escapeHtml(b.title || b.url)}</A>`;
+        const lines = [
+            '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+            '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+            '<TITLE>Bookmarks</TITLE>',
+            '<H1>Bookmarks</H1>',
+            '<DL><p>',
+            '    <DT><H3 ADD_DATE="' + Math.floor(now / 1000) + '" LAST_MODIFIED="' + Math.floor(now / 1000) + '">MultiSearch Browser 书签</H3>',
+            '    <DL><p>',
+        ];
+        if (uncategorized.length > 0) {
+            lines.push('        <DT><H3>未分类</H3>');
+            lines.push('        <DL><p>');
+            uncategorized.forEach(b => lines.push(renderLink(b)));
+            lines.push('        </DL><p>');
+        }
+        folders.forEach(f => {
+            if (folderMap[f].length === 0) return;
+            lines.push(`        <DT><H3>${escapeHtml(f)}</H3>`);
+            lines.push('        <DL><p>');
+            folderMap[f].forEach(b => lines.push(renderLink(b)));
+            lines.push('        </DL><p>');
+        });
+        lines.push('    </DL><p>');
+        lines.push('</DL><p>');
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookmarks-${new Date().toISOString().slice(0, 10)}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('书签 HTML 已导出');
+    }
+
+    async function importBookmarksHtml(file) {
+        const text = await file.text();
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const links = doc.querySelectorAll('A');
+            if (links.length === 0) {
+                showToast('未找到书签');
+                return;
+            }
+            const ok = await confirmDialog('导入书签', `从「${file.name}」发现 ${links.length} 个书签，确定导入吗？`);
+            if (!ok) return;
+            // 找出当前文件夹上下文
+            let imported = 0;
+            const allH3 = doc.querySelectorAll('H3');
+            allH3.forEach(h3 => {
+                const folderName = h3.textContent.trim();
+                if (folderName && folderName !== 'Bookmarks' && folderName !== 'MultiSearch Browser 书签') {
+                    store.addBookmarkFolder(folderName);
+                }
+            });
+            links.forEach(a => {
+                const href = a.getAttribute('HREF') || a.getAttribute('href');
+                const title = a.textContent.trim();
+                if (!href || !href.startsWith('http')) return;
+                // 找父 DL 上的 H3
+                let folder = '';
+                let p = a.parentElement;
+                while (p) {
+                    const prevH3 = p.previousElementSibling;
+                    if (prevH3 && prevH3.tagName === 'H3') {
+                        const fname = prevH3.textContent.trim();
+                        if (fname && fname !== 'Bookmarks' && fname !== 'MultiSearch Browser 书签' && fname !== '未分类') {
+                            folder = fname;
+                        }
+                        break;
+                    }
+                    p = p.parentElement;
+                }
+                // 检查重复
+                const exists = store.getBookmarks().some(b => b.url === href);
+                if (!exists) {
+                    const list = store.getBookmarks();
+                    list.unshift({
+                        id: Date.now() + imported,
+                        title: title || href,
+                        url: href,
+                        timestamp: Date.now(),
+                        folder
+                    });
+                    store.saveBookmarks(list);
+                    imported++;
+                }
+            });
+            showToast(`✅ 导入 ${imported} 个书签`);
+            renderBookmarks();
+        } catch (err) {
+            showToast('导入失败：文件格式无效');
+        }
+    }
+
+    async function clearAllData() {
+        const ok = await confirmDialog('清除所有数据', '将清除所有书签、历史、窗口、搜索历史、笔记和头像。此操作不可撤销，确定继续吗？');
+        if (ok) {
+            store.clearAllData();
+            initTheme();
+            renderHome();
+            renderProfile();
+            renderAiSummary('');
+            renderTabs();
+            showToast('所有数据已清除');
+        }
     }
 
     // ============ 数据导出/导入 ============
     function exportData() {
         const data = {
-            version: '1.3.0',
+            version: '1.3.1',
             exportTime: new Date().toISOString(),
             engine: store.getSelectedEngine(),
             windows: store.getWindows(),
@@ -1300,6 +1654,9 @@
             tabs: store.getTabs(),
             activeTabId: store.getActiveTabId(),
             scrollProgress: load(STORAGE_KEYS.scrollProgress, {}),
+            // v1.3.1
+            customEngines: store.getCustomEngines(),
+            darkSchedule: store.getDarkSchedule(),
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1334,6 +1691,8 @@
             if (data.tabs) store.saveTabs(data.tabs);
             if (data.activeTabId) store.setActiveTabId(data.activeTabId);
             if (data.scrollProgress) save(STORAGE_KEYS.scrollProgress, data.scrollProgress);
+            if (data.customEngines) save(STORAGE_KEYS.customEngines, data.customEngines);
+            if (data.darkSchedule) { store.setDarkSchedule(data.darkSchedule); applyDarkSchedule(); }
             renderHome();
             renderProfile();
             renderTabs();
@@ -1385,9 +1744,13 @@
         } else {
             meta.textContent = '输入关键词后搜索，自动生成 7 引擎多视角研讨';
         }
-        ENGINES.forEach(engine => {
-            const p = AI_PERSPECTIVES[engine.id];
-            if (!p) return;
+        // 内置 7 引擎有研讨视角，自定义引擎用通用模板
+        getAllEngines().forEach(engine => {
+            const p = AI_PERSPECTIVES[engine.id] || {
+                icon: '🔗',
+                label: `${engine.name} 视角`,
+                desc: q => `使用「${engine.name}」检索「${q}」的相关结果。`
+            };
             const q = lastAiQuery || '关键词';
             const block = document.createElement('div');
             block.className = 'ai-block';
@@ -1407,8 +1770,13 @@
 
     function copyAiReport() {
         const q = lastAiQuery || $('#search-input').value.trim() || '当前话题';
-        const lines = ENGINES.map(e => {
-            const p = AI_PERSPECTIVES[e.id];
+        const allEngines = getAllEngines();
+        const lines = allEngines.map(e => {
+            const p = AI_PERSPECTIVES[e.id] || {
+                icon: '🔗',
+                label: `${e.name} 视角`,
+                desc: qq => `使用「${e.name}」检索「${qq}」的相关结果。`
+            };
             return `- ${p.icon} ${p.label}：${p.desc(q)}`;
         });
         const text = `【AI 多源检索研讨报告 - ${q}】\n${lines.join('\n')}`;
@@ -1439,7 +1807,7 @@
         const grid = $('#parallel-grid');
         const selected = store.getParallelEngines();
         grid.innerHTML = '';
-        ENGINES.forEach(engine => {
+        getAllEngines().forEach(engine => {
             const card = document.createElement('div');
             card.className = 'parallel-card' + (selected.includes(engine.id) ? ' active' : '');
             card.innerHTML = `
@@ -1482,10 +1850,11 @@
         const selected = store.getParallelEngines();
         if (selected.length === 0) { showToast('请至少选择 1 个引擎'); return; }
         store.addSearchHistory(query);
+        const allEngines = getAllEngines();
         $('#parallel-grid').querySelectorAll('iframe').forEach(frame => {
             const id = frame.dataset.engine;
             if (selected.includes(id)) {
-                const engine = ENGINES.find(e => e.id === id);
+                const engine = allEngines.find(e => e.id === id);
                 frame.src = engine.searchUrl + encodeURIComponent(query);
             } else {
                 frame.src = 'about:blank';
@@ -1509,7 +1878,7 @@
         list.forEach(l => {
             const card = document.createElement('div');
             card.className = 'list-item-card later-item';
-            const engine = ENGINES.find(e => l.url.startsWith(e.searchUrl));
+            const engine = findEngine(l.url);
             const iconChar = engine ? engine.name[0] : '📥';
             const iconColor = engine ? engine.color : '#9C27B0';
             card.innerHTML = `
@@ -1646,9 +2015,10 @@
         if (selected.length === 0) { showToast('请先在并行搜索中选择引擎'); return; }
         showToast(`⏳ 正在聚合 ${selected.length} 个引擎...`);
         store.addSearchHistory(query);
+        const allEngines = getAllEngines();
         const all = [];
         const tasks = selected.map(async (id) => {
-            const engine = ENGINES.find(e => e.id === id);
+            const engine = allEngines.find(e => e.id === id);
             if (!engine) return;
             const results = await fetchEngineResults(engine, query);
             all.push(...results);
@@ -1735,6 +2105,8 @@
         drawTrendChart(history);
         // 引擎占比
         drawEnginePie(history);
+        // 热力图
+        drawHeatmap(history);
 
         // Top 站点
         const sites = {};
@@ -1838,9 +2210,10 @@
         ctx.clearRect(0, 0, W, H);
 
         const counts = {};
-        ENGINES.forEach(e => counts[e.id] = 0);
+        const allEngines = getAllEngines();
+        allEngines.forEach(e => counts[e.id] = 0);
         history.forEach(h => {
-            const engine = ENGINES.find(e => h.url.startsWith(e.searchUrl));
+            const engine = findEngine(h.url);
             if (engine) counts[engine.id]++;
         });
         const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -1853,7 +2226,7 @@
         }
         const cx = W / 2, cy = H / 2, r = 90;
         let start = -Math.PI / 2;
-        ENGINES.forEach(e => {
+        allEngines.forEach(e => {
             const v = counts[e.id];
             if (v === 0) return;
             const end = start + (v / total) * Math.PI * 2;
@@ -1878,6 +2251,67 @@
         ctx.fillText(total, cx, cy - 10);
         ctx.font = '18px sans-serif';
         ctx.fillText('总访问', cx, cy + 18);
+    }
+
+    // ============ 历史热力图（近 12 周，GitHub 风格） ============
+    function drawHeatmap(history) {
+        const container = $('#heatmap');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // 按日聚合
+        const dayMap = {};
+        history.forEach(h => {
+            const d = new Date(h.timestamp);
+            d.setHours(0, 0, 0, 0);
+            const key = d.getTime();
+            dayMap[key] = (dayMap[key] || 0) + 1;
+        });
+
+        // 近 12 周 = 84 天
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const days = [];
+        for (let i = 83; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const key = d.getTime();
+            const count = dayMap[key] || 0;
+            days.push({ date: d, count });
+        }
+
+        // 最大值
+        const max = Math.max(...days.map(d => d.count), 1);
+
+        days.forEach(d => {
+            const cell = document.createElement('div');
+            let level = '';
+            if (d.count > 0) {
+                const ratio = d.count / max;
+                if (ratio > 0.75) level = 'l4';
+                else if (ratio > 0.5) level = 'l3';
+                else if (ratio > 0.25) level = 'l2';
+                else level = 'l1';
+            }
+            cell.className = 'heatmap-cell ' + level;
+            const dateStr = `${d.date.getFullYear()}-${String(d.date.getMonth() + 1).padStart(2, '0')}-${String(d.date.getDate()).padStart(2, '0')}`;
+            cell.dataset.tip = `${dateStr} · ${d.count} 次`;
+            container.appendChild(cell);
+        });
+
+        // 图例
+        const legend = document.createElement('div');
+        legend.className = 'heatmap-legend';
+        legend.innerHTML = `
+            <span>少</span>
+            <div class="heatmap-cell"></div>
+            <div class="heatmap-cell l1"></div>
+            <div class="heatmap-cell l2"></div>
+            <div class="heatmap-cell l3"></div>
+            <div class="heatmap-cell l4"></div>
+            <span>多</span>
+        `;
+        container.appendChild(legend);
     }
 
     // ============ 语音搜索 ============
@@ -1918,9 +2352,77 @@
         };
     }
 
+    // ============ 全局快捷键 ============
+    function setupGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+K / Cmd+K → 聚焦搜索框
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                navigate('home');
+                setTimeout(() => $('#search-input').focus(), 50);
+                return;
+            }
+            // Ctrl+D / Cmd+D → 收藏当前页
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                if (currentRoute === 'webview' && currentWebview.url) {
+                    const added = store.toggleBookmark(
+                        currentWebview.title || currentWebview.url,
+                        currentWebview.url
+                    );
+                    updateBookmarkIcon();
+                    showToast(added ? '已添加收藏' : '已取消收藏');
+                } else {
+                    showToast('请先打开一个网页');
+                }
+                return;
+            }
+            // Ctrl+T / Cmd+T → 新标签
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                const engine = getAllEngines().find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
+                openWebview(engine.searchUrl, -1);
+                return;
+            }
+            // Ctrl+W / Cmd+W → 关闭当前标签
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+                e.preventDefault();
+                if (currentWebview.tabId) closeTab(currentWebview.tabId);
+                return;
+            }
+            // Esc → 返回上一页 / 关闭阅读模式
+            if (e.key === 'Escape') {
+                const reading = $('#reading-mode');
+                if (reading && !reading.hidden) {
+                    stopTts();
+                    reading.hidden = true;
+                    return;
+                }
+                const findBar = $('#wv-find-bar');
+                if (findBar && !findBar.hidden) {
+                    findBar.hidden = true;
+                    clearFindHighlight();
+                    return;
+                }
+                const pop = $('#note-popover');
+                if (pop && !pop.hidden) { pop.hidden = true; return; }
+                if (routeStack.length > 1) navigateBack();
+                return;
+            }
+            // / → 快速搜索（非输入框聚焦时）
+            if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                navigate('home');
+                setTimeout(() => $('#search-input').focus(), 50);
+                return;
+            }
+        });
+    }
+
     // ============ 初始化 ============
     function init() {
         initTheme();
+        applyDarkSchedule();
         renderHome();
         renderAiSummary('');
         setupWebview();
@@ -1939,6 +2441,7 @@
         setupLaterPage();
         setupNotesPage();
         setupNotesPopover();
+        setupGlobalShortcuts();
         renderTabs();
 
         $('#search-btn').onclick = handleSearch;

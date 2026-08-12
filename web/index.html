@@ -129,6 +129,7 @@
                 <div class="reading-toolbar">
                     <button id="reading-close" class="icon-btn">✕</button>
                     <span id="reading-title" class="reading-title">阅读模式</span>
+                    <button id="reading-tts" class="icon-btn" aria-label="朗读">🔊</button>
                     <button id="reading-font-dec" class="icon-btn">A-</button>
                     <button id="reading-font-inc" class="icon-btn">A+</button>
                 </div>
@@ -245,6 +246,8 @@
                 <div class="card"><canvas id="chart-trend" width="320" height="160"></canvas></div>
                 <div class="section-label">引擎使用占比</div>
                 <div class="card"><canvas id="chart-engine" width="320" height="160"></canvas></div>
+                <div class="section-label">历史访问热力图（近 12 周）</div>
+                <div class="card"><div id="heatmap" class="heatmap"></div></div>
                 <div class="section-label">常访问站点 Top 5</div>
                 <div id="stats-top-sites" class="list"></div>
             </div>
@@ -262,6 +265,13 @@
                     <span class="setting-label">默认搜索引擎</span>
                     <select id="setting-default-engine" class="setting-select"></select>
                 </div>
+                <div class="card">
+                    <div class="setting-item static" style="margin-bottom:8px">
+                        <span class="setting-label">➕ 自定义引擎</span>
+                        <button id="add-engine-btn" class="text-btn">添加</button>
+                    </div>
+                    <div id="custom-engine-list" class="custom-engine-list"></div>
+                </div>
 
                 <div class="section-label">外观</div>
                 <div class="card setting-item" id="setting-dark-mode">
@@ -272,8 +282,26 @@
                     </label>
                 </div>
                 <div class="card setting-item">
+                    <span class="setting-label">⏰ 暗黑定时</span>
+                    <select id="dark-mode-schedule" class="setting-select">
+                        <option value="off">关闭</option>
+                        <option value="auto">跟随系统</option>
+                        <option value="time">按时段（18:00-06:00）</option>
+                    </select>
+                </div>
+                <div class="card setting-item">
                     <span class="setting-label">🎨 主题色</span>
                     <div id="theme-color-picker" class="theme-color-picker"></div>
+                </div>
+
+                <div class="section-label">浏览</div>
+                <div class="card setting-item" data-action="open-incognito">
+                    <span class="setting-label">🕵 隐身窗口</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item static">
+                    <span class="setting-label">⌨️ 全局快捷键</span>
+                    <span class="setting-value">Ctrl+K 搜索 · Ctrl+D 收藏 · Esc 返回</span>
                 </div>
 
                 <div class="section-label">数据管理</div>
@@ -286,6 +314,15 @@
                     <span class="arrow">›</span>
                     <input id="import-file" type="file" accept=".json" hidden>
                 </div>
+                <div class="card setting-item" data-action="export-bookmarks-html">
+                    <span class="setting-label">📤 导出书签 HTML（兼容 Chrome）</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item" data-action="import-bookmarks-html">
+                    <span class="setting-label">📥 导入书签 HTML</span>
+                    <span class="arrow">›</span>
+                    <input id="import-bookmarks-file" type="file" accept=".html,.htm" hidden>
+                </div>
                 <div class="card setting-item" data-action="clear-all">
                     <span class="setting-label" style="color:var(--accent)">🗑 清除所有数据</span>
                     <span class="arrow">›</span>
@@ -294,11 +331,11 @@
                 <div class="section-label">关于</div>
                 <div class="card setting-item static">
                     <span class="setting-label">版本</span>
-                    <span class="setting-value">v1.3.0</span>
+                    <span class="setting-value">v1.3.1</span>
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">功能</span>
-                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 多标签 · 离线</span>
+                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 标签 · 离线 · TTS · 热力图 · 自定义引擎 · 暗黑定时 · 隐身</span>
                 </div>
             </div>
         </section>
