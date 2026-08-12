@@ -8,11 +8,7 @@ class HistoryRepository(private val historyDao: HistoryDao) {
     fun getAllHistory(): Flow<List<HistoryEntity>> = historyDao.getAllHistory()
 
     suspend fun addHistory(title: String, url: String) {
-        val existing = historyDao.getByUrl(url)
-        if (existing != null) {
-            historyDao.delete(existing)
-        }
-        historyDao.insert(HistoryEntity(title = title, url = url))
+        historyDao.upsert(title, url)
     }
 
     suspend fun deleteHistory(history: HistoryEntity) = historyDao.delete(history)

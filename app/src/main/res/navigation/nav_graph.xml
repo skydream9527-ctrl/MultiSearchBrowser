@@ -38,6 +38,10 @@
         <argument
             android:name="url"
             app:argType="string" />
+        <argument
+            android:name="windowId"
+            android:defaultValue="-1L"
+            app:argType="long" />
     </fragment>
 
     <fragment

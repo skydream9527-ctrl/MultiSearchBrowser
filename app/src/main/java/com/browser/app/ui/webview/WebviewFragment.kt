@@ -18,6 +18,7 @@ import com.browser.app.data.BrowserDatabase
 import com.browser.app.databinding.FragmentWebviewBinding
 import com.browser.app.repository.BookmarkRepository
 import com.browser.app.repository.HistoryRepository
+import com.browser.app.repository.WindowRepository
 import com.browser.app.utils.PreferenceManager
 import com.browser.app.utils.SearchEngine
 import kotlinx.coroutines.launch
@@ -27,10 +28,13 @@ class WebviewFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var historyRepository: HistoryRepository
     private lateinit var bookmarkRepository: BookmarkRepository
+    private lateinit var windowRepository: WindowRepository
     private lateinit var preferenceManager: PreferenceManager
     private var currentUrl: String = ""
     private var currentTitle: String = ""
     private var isBookmarked = false
+    /** 关联的多窗口 id；-1 表示本次浏览不绑定具体窗口 */
+    private var windowId: Long = -1L
 
     /**
      * 系统返回键优先回退 WebView 历史，无历史时才退出 Fragment。
@@ -61,6 +65,7 @@ class WebviewFragment : Fragment() {
         val db = BrowserDatabase.getInstance(requireContext())
         historyRepository = HistoryRepository(db.historyDao())
         bookmarkRepository = BookmarkRepository(db.bookmarkDao())
+        windowRepository = WindowRepository(db.windowDao())
         preferenceManager = PreferenceManager(requireContext())
 
         // 修复空 URL 加载导致的崩溃：空时回退到首页
@@ -70,6 +75,7 @@ class WebviewFragment : Fragment() {
             return
         }
         currentUrl = url
+        windowId = arguments?.getLong("windowId", -1L) ?: -1L
 
         setupWebview()
         setupToolbar()
@@ -110,6 +116,17 @@ class WebviewFragment : Fragment() {
 
                 if (currentUrl.isNotBlank()) {
                     historyRepository.addHistory(currentTitle, currentUrl)
+                    // 多窗口真实化：浏览过程中回写当前窗口的 url+title
+                    if (windowId >= 0) {
+                        lifecycleScope.launch {
+                            val existing = windowRepository.getWindowById(windowId)
+                            if (existing != null) {
+                                windowRepository.updateWindow(
+                                    existing.copy(url = currentUrl, title = currentTitle, timestamp = System.currentTimeMillis())
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

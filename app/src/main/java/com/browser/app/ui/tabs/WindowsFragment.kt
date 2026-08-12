@@ -47,7 +47,8 @@ class WindowsFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = WindowAdapter(
             onItemClick = { window ->
-                navigateToWebview(window.url)
+                // 点击窗口项：带上 windowId 进入 webview，浏览过程会回写 url/title
+                findNavController().navigateToWebview(window.url, window.id)
             },
             onCloseClick = { window ->
                 lifecycleScope.launch {
@@ -64,24 +65,20 @@ class WindowsFragment : Fragment() {
             windowRepository.getAllWindows().collect { windows ->
                 adapter.submitList(windows)
                 binding.emptyText.visibility = if (windows.isEmpty()) View.VISIBLE else View.GONE
-            }
-        }
-
-        lifecycleScope.launch {
-            windowRepository.getCount().collect { count ->
-                binding.windowCount.text = "$count 个窗口"
+                // 窗口数由列表派生，避免之前同时订阅两个 Flow 的浪费
+                binding.windowCount.text = "${windows.size} 个窗口"
             }
         }
     }
 
     private fun setupAddButton() {
         binding.addWindowBtn.setOnClickListener {
-            navigateToWebview("https://www.baidu.com")
+            // 新建窗口：先入库拿到 id，再带 id 跳 webview
+            viewLifecycleOwner.lifecycleScope.launch {
+                val id = windowRepository.addWindow(title = "新窗口", url = "https://www.baidu.com")
+                findNavController().navigateToWebview("https://www.baidu.com", id)
+            }
         }
-    }
-
-    private fun navigateToWebview(url: String) {
-        findNavController().navigateToWebview(url)
     }
 
     override fun onDestroyView() {
