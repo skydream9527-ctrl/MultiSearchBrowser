@@ -2,6 +2,7 @@
  * MultiSearch Browser · Web 版
  * 纯前端实现，localStorage 持久化数据，无后端依赖。
  * 复刻 Android 端核心功能：7 搜索引擎 / 多窗口 / 书签 / 历史 / 头像。
+ * v1.1.0 增强：搜索联想 / 设置页 / 深色模式 / 列表过滤 / 窗口重命名 / 数据导出导入 / PWA
  */
 (function () {
     'use strict';
@@ -24,9 +25,11 @@
         history: 'msb_history',
         avatar: 'msb_avatar',
         currentWindowId: 'msb_current_window_id',
+        searchHistory: 'msb_search_history',
+        theme: 'msb_theme',
     };
 
-    // 7 引擎的多源研讨视角定义（迁移自远端 AI 摘要面板，适配国内引擎）
+    // 7 引擎的多源研讨视角定义
     const AI_PERSPECTIVES = {
         baidu:    { icon: '🔍', label: '百度综合视角',  desc: q => `综合「${q}」的中文互联网权威资料、百科定义与资讯动态。` },
         sogou:    { icon: '💬', label: '搜狗微信视角',  desc: q => `聚合「${q}」相关的微信公众号深度长文与社交传播内容。` },
@@ -79,7 +82,30 @@
         cancel.onclick = () => { cleanup(); resolve(false); };
     });
 
-    // ============ 数据访问层（模拟 Room DAO） ============
+    /** 输入对话框，用于窗口重命名等场景 */
+    const inputDialog = (title, defaultValue = '') => new Promise((resolve) => {
+        const modal = $('#input-modal');
+        $('#input-modal-title').textContent = title;
+        const field = $('#input-modal-field');
+        field.value = defaultValue;
+        modal.hidden = false;
+        setTimeout(() => { field.focus(); field.select(); }, 50);
+        const ok = $('#input-modal-ok'), cancel = $('#input-modal-cancel');
+        const cleanup = () => {
+            modal.hidden = true;
+            ok.onclick = null;
+            cancel.onclick = null;
+            field.onkeydown = null;
+        };
+        ok.onclick = () => { cleanup(); resolve(field.value.trim()); };
+        cancel.onclick = () => { cleanup(); resolve(null); };
+        field.onkeydown = (e) => {
+            if (e.key === 'Enter') { cleanup(); resolve(field.value.trim()); }
+            if (e.key === 'Escape') { cleanup(); resolve(null); }
+        };
+    });
+
+    // ============ 数据访问层 ============
     const store = {
         getSelectedEngine: () => load(STORAGE_KEYS.engine, 'baidu'),
         setSelectedEngine: (id) => save(STORAGE_KEYS.engine, id),
@@ -137,7 +163,6 @@
             } else {
                 list.unshift({ id: Date.now(), title, url, timestamp: Date.now() });
             }
-            // 限制历史最多 500 条
             if (list.length > 500) list.length = 500;
             store.saveHistory(list);
         },
@@ -149,12 +174,55 @@
         // 头像
         getAvatar: () => load(STORAGE_KEYS.avatar, null),
         setAvatar: (dataUrl) => save(STORAGE_KEYS.avatar, dataUrl),
+
+        // 搜索历史（用于搜索联想）
+        getSearchHistory: () => load(STORAGE_KEYS.searchHistory, []),
+        addSearchHistory: (query) => {
+            const list = store.getSearchHistory().filter(q => q !== query);
+            list.unshift(query);
+            if (list.length > 20) list.length = 20;
+            save(STORAGE_KEYS.searchHistory, list);
+        },
+        deleteSearchHistory: (query) => {
+            save(STORAGE_KEYS.searchHistory, store.getSearchHistory().filter(q => q !== query));
+        },
+        clearSearchHistory: () => save(STORAGE_KEYS.searchHistory, []),
+
+        // 主题
+        getTheme: () => load(STORAGE_KEYS.theme, 'light'),
+        setTheme: (theme) => save(STORAGE_KEYS.theme, theme),
+
+        // 清除所有数据
+        clearAllData: () => {
+            Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+        },
     };
 
+    // ============ 深色模式 ============
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const toggle = $('#dark-mode-toggle');
+        if (toggle) toggle.checked = (theme === 'dark');
+        // 同步 theme-color meta
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? '#1A237E' : '#2196F3';
+    }
+
+    function initTheme() {
+        applyTheme(store.getTheme());
+    }
+
+    function toggleTheme() {
+        const current = store.getTheme();
+        const next = current === 'dark' ? 'light' : 'dark';
+        store.setTheme(next);
+        applyTheme(next);
+    }
+
     // ============ 路由 ============
-    const routes = ['home', 'windows', 'webview', 'profile', 'history', 'bookmarks'];
+    const routes = ['home', 'windows', 'webview', 'profile', 'history', 'bookmarks', 'settings'];
     let currentRoute = 'home';
-    let routeStack = ['home']; // 用于系统返回键
+    let routeStack = ['home'];
 
     function navigate(route, push = true) {
         if (!routes.includes(route)) return;
@@ -163,16 +231,15 @@
         routes.forEach(r => {
             $(`#page-${r}`).classList.toggle('active', r === route);
         });
-        // 同步底部 tab 高亮
         const tabMap = { home: 'home', windows: 'windows', profile: 'profile' };
         $$('.tab').forEach(t => {
             t.classList.toggle('active', t.dataset.tab === tabMap[route]);
         });
-        // 渲染对应页面
         if (route === 'windows') renderWindows();
-        if (route === 'history') renderHistory();
-        if (route === 'bookmarks') renderBookmarks();
+        if (route === 'history') { renderHistory(); $('#history-filter').value = ''; }
+        if (route === 'bookmarks') { renderBookmarks(); $('#bookmarks-filter').value = ''; }
         if (route === 'profile') renderProfile();
+        if (route === 'settings') renderSettings();
         window.scrollTo(0, 0);
     }
 
@@ -224,11 +291,70 @@
             showToast('请输入搜索内容');
             return;
         }
-        // 先更新 AI 多源研讨面板，用户返回首页时即可看到 7 引擎视角
+        // 记录搜索历史
+        store.addSearchHistory(query);
+        // 更新 AI 多源研讨面板
         renderAiSummary(query);
         const engine = ENGINES.find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
         const url = engine.searchUrl + encodeURIComponent(query);
         openWebview(url, -1);
+    }
+
+    // ============ 搜索历史联想 ============
+    function setupSearchSuggest() {
+        const input = $('#search-input');
+        const suggest = $('#search-suggest');
+
+        input.addEventListener('focus', () => renderSearchSuggest());
+        input.addEventListener('input', () => renderSearchSuggest(input.value.trim()));
+        // 延迟隐藏，避免点击建议项时先失焦
+        input.addEventListener('blur', () => {
+            setTimeout(() => { suggest.hidden = true; }, 200);
+        });
+
+        function renderSearchSuggest(filter = '') {
+            const list = store.getSearchHistory();
+            const filtered = filter
+                ? list.filter(q => q.toLowerCase().includes(filter.toLowerCase()))
+                : list;
+            if (filtered.length === 0 && !filter) {
+                suggest.hidden = true;
+                return;
+            }
+            suggest.innerHTML = '';
+            filtered.slice(0, 10).forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'suggest-item';
+                item.innerHTML = `
+                    <span class="si-icon">🕐</span>
+                    <span class="si-text">${escapeHtml(q)}</span>
+                    <span class="si-delete" data-q="${escapeHtml(q)}">✕</span>
+                `;
+                item.querySelector('.si-text').onclick = () => {
+                    input.value = q;
+                    suggest.hidden = true;
+                    handleSearch();
+                };
+                item.querySelector('.si-delete').onclick = (e) => {
+                    e.stopPropagation();
+                    store.deleteSearchHistory(q);
+                    renderSearchSuggest(filter);
+                };
+                suggest.appendChild(item);
+            });
+            if (filtered.length > 0) {
+                const footer = document.createElement('div');
+                footer.className = 'suggest-footer';
+                footer.textContent = '清空搜索历史';
+                footer.onclick = () => {
+                    store.clearSearchHistory();
+                    suggest.hidden = true;
+                    showToast('已清空搜索历史');
+                };
+                suggest.appendChild(footer);
+            }
+            suggest.hidden = false;
+        }
     }
 
     // ============ WebView ============
@@ -242,11 +368,9 @@
         $('#wv-frame').src = url;
         $('#wv-progress').hidden = false;
 
-        // 检测 iframe 是否被阻止：3 秒内未触发 load 事件，则显示兜底
         clearTimeout(frameLoadTimeout);
         frameLoadTimeout = setTimeout(() => {
             try {
-                // 若 frame 不可访问，则认为被拦截
                 const frame = $('#wv-frame');
                 if (frame.contentDocument === null) {
                     showWebviewFallback(url);
@@ -273,11 +397,9 @@
             let title = '';
             try { title = frame.contentDocument.title || ''; } catch { title = ''; }
             currentWebview.title = title;
-            // 写入历史
             if (currentWebview.url) {
                 store.addHistory(title || currentWebview.url, currentWebview.url);
             }
-            // 回写窗口
             if (currentWebview.windowId >= 0) {
                 store.updateWindow(currentWebview.windowId, {
                     url: currentWebview.url,
@@ -333,7 +455,6 @@
 
     function normalizeInput(input) {
         if (/^https?:\/\//i.test(input)) return input;
-        // 域名识别：含 . 且无空格
         const looksLikeDomain = input.includes('.') && !input.includes(' ');
         if (looksLikeDomain) return 'https://' + input;
         const engine = ENGINES.find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
@@ -360,10 +481,20 @@
                     <div class="lic-url">${escapeHtml(win.url)}</div>
                     <div class="lic-time">${formatTime(win.timestamp)}</div>
                 </div>
-                <button class="lic-close" data-id="${win.id}" aria-label="关闭">✕</button>
+                <button class="lic-btn" data-act="rename" aria-label="重命名">✏</button>
+                <button class="lic-btn danger" data-act="close" aria-label="关闭">✕</button>
             `;
             card.querySelector('.lic-body').onclick = () => openWebview(win.url, win.id);
-            card.querySelector('.lic-close').onclick = (e) => {
+            card.querySelector('[data-act="rename"]').onclick = async (e) => {
+                e.stopPropagation();
+                const newTitle = await inputDialog('重命名窗口', win.title || '');
+                if (newTitle !== null && newTitle !== win.title) {
+                    store.updateWindow(win.id, { title: newTitle });
+                    renderWindows();
+                    showToast('已重命名');
+                }
+            };
+            card.querySelector('[data-act="close"]').onclick = (e) => {
                 e.stopPropagation();
                 store.deleteWindow(win.id);
                 renderWindows();
@@ -381,12 +512,15 @@
     }
 
     // ============ 历史 ============
-    function renderHistory() {
+    function renderHistory(filter = '') {
         const list = store.getHistory();
-        $('#history-empty').hidden = list.length > 0;
+        const filtered = filter
+            ? list.filter(h => (h.title + h.url).toLowerCase().includes(filter.toLowerCase()))
+            : list;
+        $('#history-empty').hidden = filtered.length > 0;
         const listEl = $('#history-list');
         listEl.innerHTML = '';
-        list.forEach(h => {
+        filtered.forEach(h => {
             const card = document.createElement('div');
             card.className = 'list-item-card';
             const engine = ENGINES.find(e => h.url.startsWith(e.searchUrl));
@@ -404,7 +538,7 @@
             card.oncontextmenu = async (e) => {
                 e.preventDefault();
                 const ok = await confirmDialog('删除记录', '确定要删除这条记录吗？');
-                if (ok) { store.deleteHistory(h.id); renderHistory(); }
+                if (ok) { store.deleteHistory(h.id); renderHistory(filter); }
             };
             listEl.appendChild(card);
         });
@@ -415,15 +549,21 @@
             const ok = await confirmDialog('清空历史', '确定要清空所有浏览历史吗？此操作不可撤销。');
             if (ok) { store.clearHistory(); renderHistory(); showToast('已清空历史'); }
         };
+        $('#history-filter').addEventListener('input', (e) => {
+            renderHistory(e.target.value.trim());
+        });
     }
 
     // ============ 书签 ============
-    function renderBookmarks() {
+    function renderBookmarks(filter = '') {
         const list = store.getBookmarks();
-        $('#bookmarks-empty').hidden = list.length > 0;
+        const filtered = filter
+            ? list.filter(b => (b.title + b.url).toLowerCase().includes(filter.toLowerCase()))
+            : list;
+        $('#bookmarks-empty').hidden = filtered.length > 0;
         const listEl = $('#bookmarks-list');
         listEl.innerHTML = '';
-        list.forEach(b => {
+        filtered.forEach(b => {
             const card = document.createElement('div');
             card.className = 'list-item-card';
             const engine = ENGINES.find(e => b.url.startsWith(e.searchUrl));
@@ -440,9 +580,15 @@
             card.oncontextmenu = async (e) => {
                 e.preventDefault();
                 const ok = await confirmDialog('删除收藏', '确定要删除这个收藏吗？');
-                if (ok) { store.deleteBookmark(b.url); renderBookmarks(); }
+                if (ok) { store.deleteBookmark(b.url); renderBookmarks(filter); }
             };
             listEl.appendChild(card);
+        });
+    }
+
+    function setupBookmarksPage() {
+        $('#bookmarks-filter').addEventListener('input', (e) => {
+            renderBookmarks(e.target.value.trim());
         });
     }
 
@@ -470,9 +616,101 @@
                 const action = el.dataset.action;
                 if (action === 'history') navigate('history');
                 else if (action === 'bookmarks') navigate('bookmarks');
-                else if (action === 'settings') showToast('设置功能即将上线');
+                else if (action === 'settings') navigate('settings');
             };
         });
+    }
+
+    // ============ 设置页 ============
+    function renderSettings() {
+        // 默认引擎下拉
+        const select = $('#setting-default-engine');
+        select.innerHTML = '';
+        ENGINES.forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.name;
+            opt.selected = e.id === store.getSelectedEngine();
+            select.appendChild(opt);
+        });
+        // 深色模式开关
+        $('#dark-mode-toggle').checked = store.getTheme() === 'dark';
+    }
+
+    function setupSettingsPage() {
+        // 默认引擎切换
+        $('#setting-default-engine').onchange = (e) => {
+            store.setSelectedEngine(e.target.value);
+            showToast('默认引擎已切换');
+        };
+        // 深色模式
+        $('#dark-mode-toggle').onchange = (e) => {
+            store.setTheme(e.target.checked ? 'dark' : 'light');
+            applyTheme(store.getTheme());
+        };
+        // 导出数据
+        $('[data-action="export"]').onclick = () => exportData();
+        // 导入数据
+        $('[data-action="import"]').onclick = () => $('#import-file').click();
+        $('#import-file').onchange = (e) => importData(e.target.files[0]);
+        // 清除所有数据
+        $('[data-action="clear-all"]').onclick = async () => {
+            const ok = await confirmDialog('清除所有数据', '将清除所有书签、历史、窗口、搜索历史和头像。此操作不可撤销，确定继续吗？');
+            if (ok) {
+                store.clearAllData();
+                initTheme();
+                renderHome();
+                renderProfile();
+                renderAiSummary('');
+                showToast('所有数据已清除');
+            }
+        };
+    }
+
+    // ============ 数据导出/导入 ============
+    function exportData() {
+        const data = {
+            version: '1.1.0',
+            exportTime: new Date().toISOString(),
+            engine: store.getSelectedEngine(),
+            windows: store.getWindows(),
+            bookmarks: store.getBookmarks(),
+            history: store.getHistory(),
+            searchHistory: store.getSearchHistory(),
+            avatar: store.getAvatar(),
+            theme: store.getTheme(),
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `multisearch-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('数据已导出');
+    }
+
+    async function importData(file) {
+        if (!file) return;
+        const text = await file.text();
+        try {
+            const data = JSON.parse(text);
+            if (!data.version) throw new Error('无效的备份文件');
+            const ok = await confirmDialog('导入数据', `将覆盖当前所有数据（${file.name}），确定导入吗？`);
+            if (!ok) return;
+            if (data.engine) store.setSelectedEngine(data.engine);
+            if (data.windows) store.saveWindows(data.windows);
+            if (data.bookmarks) store.saveBookmarks(data.bookmarks);
+            if (data.history) store.saveHistory(data.history);
+            if (data.searchHistory) save(STORAGE_KEYS.searchHistory, data.searchHistory);
+            if (data.avatar) store.setAvatar(data.avatar);
+            if (data.theme) { store.setTheme(data.theme); applyTheme(data.theme); }
+            renderHome();
+            renderProfile();
+            showToast('数据导入成功');
+        } catch (err) {
+            showToast('导入失败：文件格式无效');
+        }
     }
 
     // ============ 工具 ============
@@ -568,12 +806,16 @@
 
     // ============ 初始化 ============
     function init() {
+        initTheme();
         renderHome();
-        renderAiSummary(''); // 初始化 AI 多源研讨面板（默认视角）
+        renderAiSummary('');
         setupWebview();
         setupWindowsPage();
         setupHistoryPage();
+        setupBookmarksPage();
         setupProfilePage();
+        setupSettingsPage();
+        setupSearchSuggest();
         setupBottomNav();
         setupBackButtons();
 
@@ -583,7 +825,7 @@
         });
         $('#ai-copy-btn').onclick = copyAiReport;
 
-        // 浏览器返回键支持（hash 路由）
+        // 浏览器返回键支持
         window.addEventListener('popstate', () => navigateBack());
     }
 

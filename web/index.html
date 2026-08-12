@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2196F3">
     <title>MultiSearch Browser · Web 版</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div id="app">
@@ -16,6 +18,8 @@
                     <input id="search-input" type="text" placeholder="输入搜索内容" autocomplete="off">
                     <button id="search-btn" aria-label="搜索">🔍</button>
                 </div>
+                <!-- 搜索历史联想下拉 -->
+                <div id="search-suggest" class="search-suggest" hidden></div>
             </header>
 
             <div class="container">
@@ -108,6 +112,9 @@
                 <h2>浏览历史</h2>
                 <button id="clear-history-btn" class="text-btn">清空</button>
             </header>
+            <div class="filter-bar">
+                <input id="history-filter" type="text" placeholder="搜索历史记录..." autocomplete="off">
+            </div>
             <div id="history-list" class="list"></div>
             <div id="history-empty" class="empty-state" hidden>暂无浏览历史</div>
         </section>
@@ -118,8 +125,60 @@
                 <button class="icon-btn back-btn" data-back="profile">←</button>
                 <h2>收藏内容</h2>
             </header>
+            <div class="filter-bar">
+                <input id="bookmarks-filter" type="text" placeholder="搜索收藏内容..." autocomplete="off">
+            </div>
             <div id="bookmarks-list" class="list"></div>
             <div id="bookmarks-empty" class="empty-state" hidden>暂无收藏内容</div>
+        </section>
+
+        <!-- ============ 设置 ============ -->
+        <section id="page-settings" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>设置</h2>
+            </header>
+            <div class="container">
+                <div class="section-label">搜索引擎</div>
+                <div class="card setting-item">
+                    <span class="setting-label">默认搜索引擎</span>
+                    <select id="setting-default-engine" class="setting-select"></select>
+                </div>
+
+                <div class="section-label">外观</div>
+                <div class="card setting-item" id="setting-dark-mode">
+                    <span class="setting-label">🌙 深色模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="section-label">数据管理</div>
+                <div class="card setting-item" data-action="export">
+                    <span class="setting-label">📤 导出数据备份</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item" data-action="import">
+                    <span class="setting-label">📥 导入数据</span>
+                    <span class="arrow">›</span>
+                    <input id="import-file" type="file" accept=".json" hidden>
+                </div>
+                <div class="card setting-item" data-action="clear-all">
+                    <span class="setting-label" style="color:var(--accent)">🗑 清除所有数据</span>
+                    <span class="arrow">›</span>
+                </div>
+
+                <div class="section-label">关于</div>
+                <div class="card setting-item static">
+                    <span class="setting-label">版本</span>
+                    <span class="setting-value">v1.1.0</span>
+                </div>
+                <div class="card setting-item static">
+                    <span class="setting-label">功能</span>
+                    <span class="setting-value">7 引擎 · AI 研讨 · 多窗口 · 深色模式</span>
+                </div>
+            </div>
         </section>
 
         <!-- ============ 底部导航 ============ -->
@@ -151,6 +210,18 @@
             <div class="modal-actions">
                 <button id="modal-cancel" class="text-btn">取消</button>
                 <button id="modal-ok" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入对话框（用于窗口重命名） -->
+    <div id="input-modal" class="modal" hidden>
+        <div class="modal-content">
+            <h3 id="input-modal-title">输入</h3>
+            <input id="input-modal-field" type="text" class="modal-input" autocomplete="off">
+            <div class="modal-actions">
+                <button id="input-modal-cancel" class="text-btn">取消</button>
+                <button id="input-modal-ok" class="btn-primary">确定</button>
             </div>
         </div>
     </div>

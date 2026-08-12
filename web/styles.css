@@ -5,11 +5,13 @@ body {
     background: #FAFAFA;
     color: #212121;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.2s, color 0.2s;
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
-input { font-family: inherit; outline: none; }
+input, select { font-family: inherit; outline: none; }
 a { color: inherit; text-decoration: none; }
 
+/* ============ 主题变量（浅色） ============ */
 :root {
     --primary: #2196F3;
     --primary-dark: #1976D2;
@@ -23,6 +25,26 @@ a { color: inherit; text-decoration: none; }
     --background: #FAFAFA;
     --white: #FFFFFF;
     --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --header-bg: #2196F3;
+    --modal-overlay: rgba(0,0,0,0.4);
+}
+
+/* ============ 主题变量（深色） ============ */
+[data-theme="dark"] {
+    --primary: #64B5F6;
+    --primary-dark: #42A5F5;
+    --accent: #FF7043;
+    --gray: #757575;
+    --gray-light: #2C2C2C;
+    --gray-dark: #BDBDBD;
+    --text-primary: #E0E0E0;
+    --text-secondary: #AAAAAA;
+    --divider: #383838;
+    --background: #121212;
+    --white: #1E1E1E;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --header-bg: #1A237E;
+    --modal-overlay: rgba(0,0,0,0.6);
 }
 
 /* ============ 布局 ============ */
@@ -47,9 +69,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ============ 首页 Header ============ */
 .home-header {
-    background: var(--primary);
+    background: var(--header-bg);
     color: var(--white);
     padding: 24px 16px 16px;
+    position: relative;
 }
 .home-header h1 {
     text-align: center;
@@ -63,6 +86,8 @@ a { color: inherit; text-decoration: none; }
     border-radius: 4px;
     padding: 4px;
     align-items: center;
+    position: relative;
+    z-index: 11;
 }
 .search-bar input {
     flex: 1;
@@ -83,6 +108,44 @@ a { color: inherit; text-decoration: none; }
     align-items: center;
     justify-content: center;
 }
+
+/* ============ 搜索历史联想 ============ */
+.search-suggest {
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    right: 16px;
+    background: var(--white);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 10;
+    max-height: 280px;
+    overflow-y: auto;
+}
+.suggest-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--divider);
+    gap: 12px;
+    transition: background 0.15s;
+}
+.suggest-item:last-child { border-bottom: none; }
+.suggest-item:hover { background: var(--gray-light); }
+.suggest-item .si-icon { font-size: 14px; color: var(--gray); flex-shrink: 0; }
+.suggest-item .si-text { flex: 1; font-size: 14px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-item .si-delete { color: var(--gray); font-size: 14px; padding: 4px 8px; border-radius: 4px; }
+.suggest-item .si-delete:hover { color: var(--accent); }
+.suggest-footer {
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray);
+    cursor: pointer;
+    border-top: 1px solid var(--divider);
+}
+.suggest-footer:hover { color: var(--accent); }
 
 /* ============ Section Label ============ */
 .section-label {
@@ -149,7 +212,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ============ 通用 Page Header ============ */
 .page-header {
-    background: var(--primary);
+    background: var(--header-bg);
     color: var(--white);
     padding: 16px;
     display: flex;
@@ -185,6 +248,22 @@ a { color: inherit; text-decoration: none; }
     width: 32px;
     height: 32px;
     font-size: 20px;
+}
+
+/* ============ 过滤栏 ============ */
+.filter-bar {
+    padding: 8px 16px;
+    background: var(--white);
+    border-bottom: 1px solid var(--divider);
+}
+.filter-bar input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--gray-light);
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-primary);
 }
 
 /* ============ 列表 ============ */
@@ -235,18 +314,19 @@ a { color: inherit; text-decoration: none; }
     color: var(--gray);
     margin-top: 2px;
 }
-.list-item-card .lic-close {
+.list-item-card .lic-btn {
     width: 32px;
     height: 32px;
     color: var(--gray);
-    font-size: 18px;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    margin-left: 8px;
+    margin-left: 4px;
 }
-.list-item-card .lic-close:hover { background: var(--gray-light); color: var(--accent); }
+.list-item-card .lic-btn:hover { background: var(--gray-light); color: var(--primary); }
+.list-item-card .lic-btn.danger:hover { color: var(--accent); }
 
 /* ============ 空状态 ============ */
 .empty-state {
@@ -301,6 +381,65 @@ a { color: inherit; text-decoration: none; }
 .list-item .title { flex: 1; font-size: 15px; color: var(--text-primary); }
 .list-item .arrow { color: var(--gray); font-size: 20px; }
 
+/* ============ 设置页 ============ */
+.setting-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    gap: 12px;
+}
+.setting-item:hover { background: var(--gray-light); }
+.setting-item.static { cursor: default; }
+.setting-item.static:hover { background: var(--white); }
+.setting-label {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+.setting-value {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.setting-select {
+    padding: 6px 12px;
+    background: var(--gray-light);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+/* ============ 开关 Switch ============ */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--gray);
+    border-radius: 24px;
+    transition: 0.2s;
+}
+.slider::before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: var(--white);
+    border-radius: 50%;
+    transition: 0.2s;
+}
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+
 /* ============ WebView 页面 ============ */
 .webview-toolbar {
     background: var(--white);
@@ -331,6 +470,7 @@ a { color: inherit; text-decoration: none; }
     border: none;
     border-radius: 4px;
     font-size: 14px;
+    color: var(--text-primary);
 }
 .progress-bar {
     height: 3px;
@@ -408,7 +548,7 @@ a { color: inherit; text-decoration: none; }
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: var(--modal-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -424,8 +564,18 @@ a { color: inherit; text-decoration: none; }
     width: 100%;
     box-shadow: 0 8px 32px rgba(0,0,0,0.16);
 }
-.modal-content h3 { font-size: 16px; margin-bottom: 12px; }
+.modal-content h3 { font-size: 16px; margin-bottom: 12px; color: var(--text-primary); }
 .modal-content p { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+.modal-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--gray-light);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .modal-actions .text-btn { color: var(--gray); padding: 8px 12px; font-size: 14px; }
 .modal-actions .text-btn:hover { color: var(--text-primary); }
@@ -437,7 +587,7 @@ a { color: inherit; text-decoration: none; }
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.8);
-    color: var(--white);
+    color: #fff;
     padding: 10px 20px;
     border-radius: 4px;
     font-size: 14px;
