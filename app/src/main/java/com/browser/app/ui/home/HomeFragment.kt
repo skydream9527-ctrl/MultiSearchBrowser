@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.browser.app.databinding.FragmentHomeBinding
 import com.browser.app.utils.PreferenceManager
 import com.browser.app.utils.SearchEngine
+import com.browser.app.utils.navigateToWebview
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -112,9 +113,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun navigateToWebview(url: String) {
-        val action = com.browser.app.ui.home.HomeFragmentDirections
-            .actionHomeFragmentToWebviewFragment(url)
-        findNavController().navigate(action)
+        findNavController().navigateToWebview(url)
     }
 
     override fun onDestroyView() {

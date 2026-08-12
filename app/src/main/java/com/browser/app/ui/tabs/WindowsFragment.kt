@@ -16,6 +16,7 @@ import com.browser.app.data.entity.WindowEntity
 import com.browser.app.databinding.FragmentWindowsBinding
 import com.browser.app.databinding.ItemWindowBinding
 import com.browser.app.repository.WindowRepository
+import com.browser.app.utils.navigateToWebview
 import kotlinx.coroutines.launch
 
 class WindowsFragment : Fragment() {
@@ -80,9 +81,7 @@ class WindowsFragment : Fragment() {
     }
 
     private fun navigateToWebview(url: String) {
-        val action = com.browser.app.ui.home.HomeFragmentDirections
-            .actionHomeFragmentToWebviewFragment(url)
-        findNavController().navigate(action)
+        findNavController().navigateToWebview(url)
     }
 
     override fun onDestroyView() {

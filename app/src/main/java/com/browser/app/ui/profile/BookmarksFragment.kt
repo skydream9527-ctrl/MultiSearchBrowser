@@ -16,6 +16,7 @@ import com.browser.app.data.entity.BookmarkEntity
 import com.browser.app.databinding.FragmentBookmarksBinding
 import com.browser.app.databinding.ItemBookmarkBinding
 import com.browser.app.repository.BookmarkRepository
+import com.browser.app.utils.navigateToWebview
 import kotlinx.coroutines.launch
 
 class BookmarksFragment : Fragment() {
@@ -45,9 +46,7 @@ class BookmarksFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = BookmarkAdapter(
             onItemClick = { bookmark ->
-                val action = com.browser.app.ui.home.HomeFragmentDirections
-                    .actionHomeFragmentToWebviewFragment(bookmark.url)
-                findNavController().navigate(action)
+                findNavController().navigateToWebview(bookmark.url)
             },
             onLongClick = { bookmark ->
                 showDeleteDialog(bookmark)

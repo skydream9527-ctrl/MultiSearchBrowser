@@ -16,6 +16,7 @@ import com.browser.app.data.entity.HistoryEntity
 import com.browser.app.databinding.FragmentHistoryBinding
 import com.browser.app.databinding.ItemHistoryBinding
 import com.browser.app.repository.HistoryRepository
+import com.browser.app.utils.navigateToWebview
 import kotlinx.coroutines.launch
 
 class HistoryFragment : Fragment() {
@@ -46,9 +47,7 @@ class HistoryFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = HistoryAdapter(
             onItemClick = { history ->
-                val action = com.browser.app.ui.home.HomeFragmentDirections
-                    .actionHomeFragmentToWebviewFragment(history.url)
-                findNavController().navigate(action)
+                findNavController().navigateToWebview(history.url)
             },
             onLongClick = { history ->
                 showDeleteDialog(history)
@@ -68,7 +67,18 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupClearButton() {
-        // Add clear button functionality if needed
+        binding.btnClear.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.clear_history)
+                .setMessage("确定要清空所有浏览历史吗？此操作不可撤销。")
+                .setPositiveButton("清空") { _, _ ->
+                    lifecycleScope.launch {
+                        historyRepository.clearHistory()
+                    }
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
     }
 
     private fun showDeleteDialog(history: HistoryEntity) {

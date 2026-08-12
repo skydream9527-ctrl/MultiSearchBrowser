@@ -23,4 +23,20 @@ interface BookmarkDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM bookmarks WHERE url = :url)")
     fun isBookmarked(url: String): Flow<Boolean>
+
+    /**
+     * 原子化切换收藏状态：用 @Transaction 包装 查询+写入，
+     * 避免快速连点导致的重复添加竞态。
+     */
+    @androidx.room.Transaction
+    suspend fun toggleByUrl(title: String, url: String): Boolean {
+        val existing = getByUrl(url)
+        return if (existing != null) {
+            delete(existing)
+            false
+        } else {
+            insert(BookmarkEntity(title = title, url = url))
+            true
+        }
+    }
 }

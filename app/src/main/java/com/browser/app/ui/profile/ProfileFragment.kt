@@ -88,6 +88,10 @@ class ProfileFragment : Fragment() {
         binding.bookmarksSection.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_bookmarksFragment)
         }
+
+        binding.settingsSection.setOnClickListener {
+            Toast.makeText(requireContext(), "设置功能即将上线", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun checkPermissionAndPickImage() {

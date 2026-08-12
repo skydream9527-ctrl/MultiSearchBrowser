@@ -18,13 +18,6 @@ class BookmarkRepository(private val bookmarkDao: BookmarkDao) {
     }
 
     suspend fun toggleBookmark(title: String, url: String): Boolean {
-        val existing = bookmarkDao.getByUrl(url)
-        return if (existing != null) {
-            bookmarkDao.delete(existing)
-            false
-        } else {
-            bookmarkDao.insert(BookmarkEntity(title = title, url = url))
-            true
-        }
+        return bookmarkDao.toggleByUrl(title, url)
     }
 }

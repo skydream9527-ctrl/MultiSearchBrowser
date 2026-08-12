@@ -36,6 +36,16 @@
             android:textColor="@color/white"
             android:layout_marginStart="16dp" />
 
+        <TextView
+            android:id="@+id/btn_clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/clear_history"
+            android:textSize="14sp"
+            android:textColor="@color/white"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

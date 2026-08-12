@@ -4,14 +4,15 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
 
+    <!-- 全局 action：任意 Fragment 都可跳到 webview，避免越级导航崩溃 -->
+    <action
+        android:id="@+id/action_global_webviewFragment"
+        app:destination="@id/webviewFragment" />
+
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.browser.app.ui.home.HomeFragment"
-        android:label="首页">
-        <action
-            android:id="@+id/action_homeFragment_to_webviewFragment"
-            app:destination="@id/webviewFragment" />
-    </fragment>
+        android:label="首页" />
 
     <fragment
         android:id="@+id/windowsFragment"
