@@ -136,6 +136,8 @@
                     <button id="reading-font-dec" class="icon-btn">A-</button>
                     <button id="reading-font-inc" class="icon-btn">A+</button>
                     <button id="reading-auto-scroll" class="icon-btn" aria-label="自动滚动">⏬</button>
+                    <button id="reading-full-screenshot" class="icon-btn" aria-label="长图导出">🖼</button>
+                    <button id="reading-pdf" class="icon-btn" aria-label="PDF 导出">📄</button>
                     <button id="reading-settings" class="icon-btn" aria-label="阅读设置">⚙</button>
                 </div>
                 <!-- 阅读设置面板 -->
@@ -414,6 +416,24 @@
                     <span class="arrow">›</span>
                 </div>
 
+                <!-- v1.6.0: 进阶能力 -->
+                <div class="section-label">进阶能力</div>
+                <div class="card setting-item" data-action="toggle-ad-block">
+                    <span class="setting-label">🛡 广告拦截</span>
+                    <label class="switch">
+                        <input type="checkbox" id="ad-block-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="card setting-item" data-action="manage-scripts">
+                    <span class="setting-label">🐵 用户脚本管理</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card setting-item" data-action="export-notes-md">
+                    <span class="setting-label">📝 导出笔记 Markdown</span>
+                    <span class="arrow">›</span>
+                </div>
+
                 <div class="section-label">数据管理</div>
                 <div class="card setting-item" data-action="export">
                     <span class="setting-label">📤 导出数据备份</span>
@@ -441,11 +461,11 @@
                 <div class="section-label">关于</div>
                 <div class="card setting-item static">
                     <span class="setting-label">版本</span>
-                    <span class="setting-value">v1.4.0</span>
+                    <span class="setting-value">v1.6.0</span>
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">功能</span>
-                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 标签 · 离线 · TTS · 热力图 · 自定义引擎 · 暗黑定时 · 隐身 · AI 摘要 · 翻译 · 同步 · RSS · 截图 · 密码</span>
+                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 标签 · 离线 · TTS · 热力图 · 自定义引擎 · 暗黑定时 · 隐身 · AI 摘要 · 翻译 · 同步 · RSS · 截图 · 密码 · 用户脚本 · 广告拦截 · 长图 · PDF · 笔记导出</span>
                 </div>
             </div>
         </section>

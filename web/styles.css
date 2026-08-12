@@ -1549,6 +1549,24 @@ a { color: inherit; text-decoration: none; }
     font-size: 11px;
     color: var(--gray);
 }
+.rss-item .ri-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.rss-item .ri-later-btn {
+    background: transparent;
+    color: var(--gray);
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.rss-item .ri-later-btn:hover { background: var(--gray-light); color: var(--primary); }
+/* v1.6.0: 已读样式 */
+.rss-item.rss-read { opacity: 0.6; }
+.rss-item.rss-read .ri-title { color: var(--text-secondary); }
 
 /* ============ v1.4.0: 密码列表 ============ */
 .pwd-item {

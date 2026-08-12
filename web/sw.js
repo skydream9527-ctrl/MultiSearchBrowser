@@ -1,8 +1,8 @@
 /**
  * MultiSearch Browser · Service Worker
- * v1.5.0：缓存静态资源 + 离线回退页
+ * v1.6.0：缓存静态资源 + 离线回退页 + 广告拦截
  */
-const CACHE_VERSION = 'msb-v1.5.0';
+const CACHE_VERSION = 'msb-v1.6.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -11,6 +11,52 @@ const STATIC_ASSETS = [
     './utils.js',
     './manifest.json',
 ];
+
+// v1.6.0: 广告/追踪域名黑名单
+const AD_BLACKLIST = [
+    'doubleclick.net',
+    'googlesyndication.com',
+    'googletagmanager.com',
+    'googletagservices.com',
+    'google-analytics.com',
+    'adservice.google.com',
+    'facebook.net',
+    'amazon-adsystem.com',
+    'criteo.com',
+    'criteo.net',
+    'taboola.com',
+    'outbrain.com',
+    'adnxs.com',
+    'pubmatic.com',
+    'rubiconproject.com',
+    'openx.net',
+    'quantserve.com',
+    'scorecardresearch.com',
+    'hotjar.com',
+    'mixpanel.com',
+    'segment.io',
+    'adroll.com',
+    'cnzz.com',
+    'umeng.com',
+    'talkingdata.com',
+];
+
+// 检查 URL 是否命中黑名单
+function isAdRequest(url) {
+    try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        const pathname = new URL(url).pathname.toLowerCase();
+        return AD_BLACKLIST.some(item => {
+            if (item.includes('/')) {
+                // 含路径的黑名单项
+                return (hostname + pathname).includes(item);
+            }
+            return hostname.includes(item);
+        });
+    } catch {
+        return false;
+    }
+}
 
 // 安装：预缓存静态资源
 self.addEventListener('install', (event) => {
@@ -28,12 +74,29 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// 拦截请求：静态资源 cache-first，跨域动态请求 network-first
+// 拦截请求：广告拦截 + 静态资源 cache-first + 跨域 network-first
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     if (req.method !== 'GET') return;
 
     const url = new URL(req.url);
+
+    // v1.6.0: 广告拦截 - 命中黑名单直接返回空响应
+    if (isAdRequest(req.url)) {
+        // 根据请求类型返回合适的空响应
+        const dest = req.destination;
+        let emptyBody = '';
+        let contentType = 'text/plain';
+        if (dest === 'script') { emptyBody = '/* blocked by MSB */'; contentType = 'application/javascript'; }
+        else if (dest === 'image') { emptyBody = ''; contentType = 'image/png'; }
+        else if (dest === 'style') { emptyBody = '/* blocked by MSB */'; contentType = 'text/css'; }
+        event.respondWith(new Response(emptyBody, {
+            status: 200,
+            headers: { 'Content-Type': contentType, 'Cache-Control': 'no-store' }
+        }));
+        return;
+    }
+
     const sameOrigin = url.origin === self.location.origin;
 
     if (sameOrigin) {

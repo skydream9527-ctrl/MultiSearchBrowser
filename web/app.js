@@ -56,6 +56,10 @@
         pwdAutoLock: 'msb_pwd_auto_lock',
         translateCache: 'msb_translate_cache',
         errorLog: 'msb_error_log',
+        // v1.6.0
+        userScripts: 'msb_user_scripts',
+        adBlockEnabled: 'msb_ad_block_enabled',
+        rssReadSet: 'msb_rss_read_set',
     };
 
     // 5 种主题色预设
@@ -389,8 +393,108 @@
         },
         clearErrorLog: () => save(STORAGE_KEYS.errorLog, []),
 
+        // v1.6.0: 用户脚本
+        getUserScripts: () => load(STORAGE_KEYS.userScripts, []),
+        setUserScripts: (list) => save(STORAGE_KEYS.userScripts, list),
+        addUserScript: (script) => {
+            const list = load(STORAGE_KEYS.userScripts, []);
+            list.push({ id: Date.now(), enabled: true, ...script });
+            save(STORAGE_KEYS.userScripts, list);
+        },
+        updateUserScript: (id, patch) => {
+            const list = load(STORAGE_KEYS.userScripts, []);
+            const idx = list.findIndex(s => s.id === id);
+            if (idx >= 0) { list[idx] = { ...list[idx], ...patch }; save(STORAGE_KEYS.userScripts, list); }
+        },
+        deleteUserScript: (id) => save(STORAGE_KEYS.userScripts, load(STORAGE_KEYS.userScripts, []).filter(s => s.id !== id)),
+
+        // v1.6.0: 广告拦截开关
+        getAdBlockEnabled: () => load(STORAGE_KEYS.adBlockEnabled, true),
+        setAdBlockEnabled: (on) => save(STORAGE_KEYS.adBlockEnabled, on),
+
+        // v1.6.0: RSS 已读集合（用 Set 序列化为数组存储）
+        getRssReadSet: () => new Set(load(STORAGE_KEYS.rssReadSet, [])),
+        markRssRead: (guid) => {
+            const set = new Set(load(STORAGE_KEYS.rssReadSet, []));
+            set.add(guid);
+            save(STORAGE_KEYS.rssReadSet, Array.from(set));
+        },
+        clearRssRead: () => save(STORAGE_KEYS.rssReadSet, []),
+
         clearAllData: () => { Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key)); },
     };
+
+    // v1.6.0: 广告/追踪域名黑名单
+    const AD_BLACKLIST = [
+        'doubleclick.net',
+        'googlesyndication.com',
+        'googletagmanager.com',
+        'googletagservices.com',
+        'google-analytics.com',
+        'adservice.google.com',
+        'facebook.net',
+        'facebook.com/tr',
+        'amazon-adsystem.com',
+        'adsystem.com',
+        'criteo.com',
+        'criteo.net',
+        'taboola.com',
+        'outbrain.com',
+        'adnxs.com',
+        'pubmatic.com',
+        'rubiconproject.com',
+        'openx.net',
+        'quantserve.com',
+        'scorecardresearch.com',
+        'hotjar.com',
+        'mixpanel.com',
+        'segment.io',
+        'adroll.com',
+        'bing.com/ads',
+        'baidu.com/cpro',
+        'cnzz.com',
+        'umeng.com',
+        'talkingdata.com',
+    ];
+
+    // v1.6.0: 内置示例用户脚本
+    const BUILTIN_SCRIPTS = [
+        {
+            name: '夜间模式',
+            pattern: '.*',
+            description: '为页面强制应用暗色主题',
+            code: `(function() {
+    var style = document.createElement('style');
+    style.textContent = \`
+        html { filter: invert(1) hue-rotate(180deg) !important; }
+        img, video, iframe { filter: invert(1) hue-rotate(180deg) !important; }
+    \`;
+    document.head.appendChild(style);
+})();`
+        },
+        {
+            name: '隐藏广告元素',
+            pattern: '.*',
+            description: '基于 class/id 启发式隐藏广告元素',
+            code: `(function() {
+    var selectors = ['[class*="ad-"]', '[class*="ads-"]', '[class*="advert"]', '[id*="ad-"]', '[id*="ads-"]', '[id*="advert"]', '.ad', '.ads', '.advertisement', '[class*="banner"]'];
+    selectors.forEach(function(s) {
+        document.querySelectorAll(s).forEach(function(el) { el.style.display = 'none'; });
+    });
+})();`
+        },
+        {
+            name: '自动滚动到正文',
+            pattern: '.*',
+            description: '页面加载后自动滚动到 article 元素',
+            code: `(function() {
+    var article = document.querySelector('article') || document.querySelector('.article') || document.querySelector('.content');
+    if (article) {
+        article.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+})();`
+        }
+    ];
 
     // 获取所有引擎（内置 + 自定义）
     function getAllEngines() {
@@ -659,6 +763,8 @@
                     }
                 } catch {}
             }
+            // v1.6.0: 注入用户脚本（仅同源可访问，跨域会抛错被 try/catch 兜底）
+            injectUserScripts(frame, currentWebview.url);
         });
 
         // 阅读进度监听（节流保存，隐身模式跳过）
@@ -1090,7 +1196,16 @@
         if (article) {
             // 清理脚本/样式/广告
             article = article.cloneNode(true);
-            article.querySelectorAll('script, style, iframe, nav, header, footer, aside, .ad, .ads').forEach(el => el.remove());
+            // v1.6.0: 扩展广告元素过滤
+            const adSelectors = [
+                'script', 'style', 'iframe', 'nav', 'header', 'footer', 'aside',
+                '.ad', '.ads', '.advertisement', '[class*="ad-"]', '[class*="ads-"]',
+                '[class*="advert"]', '[id*="ad-"]', '[id*="ads-"]', '[id*="advert"]',
+                '[class*="banner"]', '[class*="popup"]', '[class*="promo"]',
+                '.sidebar', '.recommend', '.related', '.comments', '.share',
+                'ins', 'embed'
+            ];
+            article.querySelectorAll(adSelectors.join(',')).forEach(el => el.remove());
             content.innerHTML = '';
             content.appendChild(article);
         } else {
@@ -1124,6 +1239,8 @@
         $('#reading-screenshot').onclick = () => captureScreenshot(content);
         $('#reading-auto-scroll').onclick = () => toggleAutoScroll(content);
         $('#reading-settings').onclick = () => toggleReadingSettingsPanel();
+        $('#reading-full-screenshot').onclick = () => captureFullScreenshot(content);
+        $('#reading-pdf').onclick = () => exportPdf(content);
         setupReadingSettingsPanel(content);
 
         // 划词监听
@@ -1539,6 +1656,7 @@
     function renderRss(filter = '') {
         const items = store.getRssCache();
         const feeds = store.getRssFeeds();
+        const readSet = store.getRssReadSet();
         const filtered = filter
             ? items.filter(i => (i.title + i.description).toLowerCase().includes(filter.toLowerCase()))
             : items;
@@ -1554,15 +1672,36 @@
         listEl.innerHTML = '';
         filtered.slice(0, 100).forEach(item => {
             const card = document.createElement('div');
-            card.className = 'rss-item';
+            const isRead = readSet.has(item.guid || item.link);
+            card.className = 'rss-item' + (isRead ? ' rss-read' : '');
             const desc = (item.description || '').replace(/<[^>]+>/g, '').slice(0, 120);
             card.innerHTML = `
-                <span class="ri-source">${escapeHtml(item.source || 'RSS')}</span>
+                <div class="ri-row">
+                    <span class="ri-source">${escapeHtml(item.source || 'RSS')}</span>
+                    <button class="ri-later-btn" aria-label="加入稍后阅读" title="加入稍后阅读">📥</button>
+                </div>
                 <div class="ri-title">${escapeHtml(item.title)}</div>
                 <div class="ri-desc">${escapeHtml(desc)}</div>
-                <div class="ri-time">${item.pubDate ? formatTime(new Date(item.pubDate).getTime()) : ''}</div>
+                <div class="ri-time">${item.pubDate ? formatTime(new Date(item.pubDate).getTime()) : ''}${isRead ? ' · 已读' : ''}</div>
             `;
-            card.onclick = () => { if (item.link) openWebview(item.link, -1); };
+            card.onclick = () => {
+                if (item.link) {
+                    openWebview(item.link, -1);
+                    // v1.6.0: 标记已读
+                    store.markRssRead(item.guid || item.link);
+                    renderRss(filter);
+                }
+            };
+            // 加入稍后阅读
+            card.querySelector('.ri-later-btn').onclick = (e) => {
+                e.stopPropagation();
+                if (item.link) {
+                    store.addLater(item.title, item.link, item.source || 'RSS');
+                    store.markRssRead(item.guid || item.link);
+                    showToast('📥 已加入稍后阅读');
+                    renderRss(filter);
+                }
+            };
             listEl.appendChild(card);
         });
     }
@@ -1581,6 +1720,9 @@
             await refreshRss();
             renderRss();
         };
+        // v1.6.0: 添加刷新按钮（复用 add-btn 旁边）
+        // 通过长按或双击 add-btn 触发刷新（简化：在 page header 增加刷新语义）
+        // 此处保持简单：每次进入 RSS 页面自动刷新
     }
 
     async function refreshRss() {
@@ -1966,6 +2108,246 @@
             ok.onclick = null;
             if ($('#error-log-content')) $('#error-log-content').remove();
         };
+    }
+
+    // ============ v1.6.0: 用户脚本（油猴） ============
+    function injectUserScripts(frame, url) {
+        if (!url) return;
+        const scripts = store.getUserScripts().filter(s => s.enabled);
+        if (scripts.length === 0) return;
+        try {
+            const doc = frame.contentDocument;
+            if (!doc) return; // 跨域无法访问
+            scripts.forEach(script => {
+                try {
+                    const pattern = new RegExp(script.pattern || '.*');
+                    if (!pattern.test(url)) return;
+                    const tag = doc.createElement('script');
+                    tag.textContent = script.code;
+                    tag.dataset.msbScript = String(script.id);
+                    (doc.head || doc.documentElement).appendChild(tag);
+                } catch (e) {
+                    console.warn('[MSB] 脚本注入失败:', script.name, e);
+                }
+            });
+        } catch {
+            // 跨域 iframe，无法注入（浏览器安全策略）
+        }
+    }
+
+    function showUserScriptsManager() {
+        const modal = $('#pwd-unlock-modal');
+        $('#pwd-unlock-title').textContent = '🐵 用户脚本管理';
+        // 隐藏输入区，显示脚本列表
+        modal.querySelectorAll('input, .modal-actions').forEach(el => el.style.display = 'none');
+        let list = $('#user-script-list');
+        if (!list) {
+            list = document.createElement('div');
+            list.id = 'user-script-list';
+            modal.querySelector('.modal-card, .modal-body, div').appendChild(list);
+        }
+        const renderScriptList = () => {
+            const scripts = store.getUserScripts();
+            let html = '<div style="max-height:320px;overflow-y:auto;margin-bottom:12px">';
+            if (scripts.length === 0) {
+                html += '<div style="text-align:center;padding:24px;color:var(--text-secondary)">暂无脚本，点击下方按钮添加</div>';
+            } else {
+                scripts.forEach(s => {
+                    html += `
+                        <div style="padding:10px;border-bottom:1px solid var(--divider)">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                <strong>${escapeHtml(s.name)}</strong>
+                                <label style="font-size:12px;color:var(--text-secondary)">
+                                    <input type="checkbox" data-id="${s.id}" class="us-toggle" ${s.enabled ? 'checked' : ''}> 启用
+                                </label>
+                            </div>
+                            <div style="font-size:11px;color:var(--gray)">pattern: ${escapeHtml(s.pattern || '.*')}</div>
+                            ${s.description ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${escapeHtml(s.description)}</div>` : ''}
+                            <div style="margin-top:6px;display:flex;gap:8px">
+                                <button class="btn-text-small" data-act="edit" data-id="${s.id}">编辑</button>
+                                <button class="btn-text-small" data-act="del" data-id="${s.id}" style="color:var(--accent)">删除</button>
+                            </div>
+                        </div>`;
+                });
+            }
+            html += '</div>';
+            html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+            html += '<button class="btn-primary" id="us-add">＋ 添加脚本</button>';
+            html += '<button class="btn-text" id="us-import-builtin">导入内置示例</button>';
+            html += '<button class="btn-text" id="us-close">关闭</button>';
+            html += '</div>';
+            list.innerHTML = html;
+            // 绑定事件
+            list.querySelectorAll('.us-toggle').forEach(cb => {
+                cb.onchange = (e) => {
+                    store.updateUserScript(Number(e.target.dataset.id), { enabled: e.target.checked });
+                };
+            });
+            list.querySelectorAll('[data-act="edit"]').forEach(btn => {
+                btn.onclick = () => editUserScript(Number(btn.dataset.id), renderScriptList);
+            });
+            list.querySelectorAll('[data-act="del"]').forEach(btn => {
+                btn.onclick = async () => {
+                    if (await confirmDialog('删除脚本', '确定删除此用户脚本吗？')) {
+                        store.deleteUserScript(Number(btn.dataset.id));
+                        renderScriptList();
+                    }
+                };
+            });
+            $('#us-add').onclick = () => editUserScript(null, renderScriptList);
+            $('#us-import-builtin').onclick = () => {
+                BUILTIN_SCRIPTS.forEach(s => store.addUserScript(s));
+                showToast(`已导入 ${BUILTIN_SCRIPTS.length} 个示例脚本`);
+                renderScriptList();
+            };
+            $('#us-close').onclick = () => {
+                modal.hidden = true;
+                modal.querySelectorAll('input, .modal-actions').forEach(el => el.style.display = '');
+                if ($('#user-script-list')) $('#user-script-list').remove();
+            };
+        };
+        renderScriptList();
+        modal.hidden = false;
+    }
+
+    async function editUserScript(existing, onDone) {
+        const s = existing ? store.getUserScripts().find(x => x.id === existing) : null;
+        const name = await inputDialog('脚本名称', s?.name || '');
+        if (name === null) return;
+        const pattern = await inputDialog('URL 匹配正则（默认 .* 匹配所有）', s?.pattern || '.*');
+        if (pattern === null) return;
+        const description = await inputDialog('描述（可选）', s?.description || '');
+        if (description === null) return;
+        const code = await inputDialog('脚本代码（JavaScript）', s?.code || '');
+        if (code === null) return;
+        if (!name.trim() || !code.trim()) {
+            showToast('名称和代码不能为空');
+            return;
+        }
+        if (existing) {
+            store.updateUserScript(existing, { name: name.trim(), pattern: pattern.trim() || '.*', description: description.trim(), code });
+        } else {
+            store.addUserScript({ name: name.trim(), pattern: pattern.trim() || '.*', description: description.trim(), code });
+        }
+        showToast('✅ 脚本已保存');
+        if (onDone) onDone();
+    }
+
+    // ============ v1.6.0: 长图导出 + PDF 导出 ============
+    async function captureFullScreenshot(content) {
+        if (typeof html2canvas === 'undefined') {
+            showToast('截图库未加载');
+            return;
+        }
+        showToast('📸 正在生成长图...');
+        try {
+            // 临时移除滚动限制以截取完整内容
+            const oldOverflow = content.style.overflowY;
+            const oldMaxHeight = content.style.maxHeight;
+            content.style.overflowY = 'visible';
+            content.style.maxHeight = 'none';
+            const canvas = await html2canvas(content, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: getComputedStyle(content).backgroundColor || '#ffffff',
+                scrollY: 0,
+                windowWidth: content.scrollWidth
+            });
+            content.style.overflowY = oldOverflow;
+            content.style.maxHeight = oldMaxHeight;
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `msb-长图-${new Date().toISOString().slice(0, 10)}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('✅ 长图已下载');
+            }, 'image/png');
+        } catch (e) {
+            showToast('❌ 截图失败：' + e.message);
+            store.addErrorLog({ type: 'js', message: '长图截图失败: ' + e.message, filename: 'app.js', line: 0, col: 0, stack: e.stack || '' });
+        }
+    }
+
+    async function exportPdf(content) {
+        if (typeof html2canvas === 'undefined') {
+            showToast('截图库未加载');
+            return;
+        }
+        // 动态加载 jsPDF
+        if (typeof window.jspdf === 'undefined') {
+            await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+        }
+        if (typeof window.jspdf === 'undefined') {
+            showToast('PDF 库加载失败');
+            return;
+        }
+        showToast('📄 正在生成 PDF...');
+        try {
+            const oldOverflow = content.style.overflowY;
+            const oldMaxHeight = content.style.maxHeight;
+            content.style.overflowY = 'visible';
+            content.style.maxHeight = 'none';
+            const canvas = await html2canvas(content, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+            content.style.overflowY = oldOverflow;
+            content.style.maxHeight = oldMaxHeight;
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+            const pdfW = 210; // A4 mm
+            const pdfH = (canvas.height * pdfW) / canvas.width;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfW, pdfH] });
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+            pdf.save(`msb-文档-${new Date().toISOString().slice(0, 10)}.pdf`);
+            showToast('✅ PDF 已下载');
+        } catch (e) {
+            showToast('❌ PDF 生成失败：' + e.message);
+            store.addErrorLog({ type: 'js', message: 'PDF 生成失败: ' + e.message, filename: 'app.js', line: 0, col: 0, stack: e.stack || '' });
+        }
+    }
+
+    function loadScript(src) {
+        return new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+        });
+    }
+
+    // ============ v1.6.0: 笔记 Markdown 导出 ============
+    function exportNotesMarkdown() {
+        const notes = store.getNotes();
+        if (notes.length === 0) {
+            showToast('暂无笔记可导出');
+            return;
+        }
+        // 按 sourceUrl 分组
+        const groups = {};
+        notes.forEach(n => {
+            const key = n.sourceUrl || '未分类';
+            if (!groups[key]) groups[key] = { title: n.sourceTitle || key, items: [] };
+            groups[key].items.push(n);
+        });
+        let md = `# MultiSearch Browser · 划线笔记\n\n导出时间：${new Date().toLocaleString()}\n总计 ${notes.length} 条\n\n---\n\n`;
+        Object.entries(groups).forEach(([url, g]) => {
+            md += `## ${g.title}\n\n来源：${url}\n\n`;
+            g.items.forEach((n, i) => {
+                md += `### ${i + 1}. ${n.text.slice(0, 50)}${n.text.length > 50 ? '…' : ''}\n\n`;
+                md += `> ${n.text.replace(/\n/g, '\n> ')}\n\n`;
+                md += `- 时间：${new Date(n.timestamp).toLocaleString()}\n\n`;
+            });
+            md += '---\n\n';
+        });
+        const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `msb-笔记-${new Date().toISOString().slice(0, 10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`✅ 已导出 ${notes.length} 条笔记`);
     }
 
     // ============ v1.4.0: 跨设备同步 ============
@@ -2631,8 +3013,20 @@
                         showToast('错误日志已清空');
                     }
                 }
+                // v1.6.0
+                else if (action === 'manage-scripts') showUserScriptsManager();
+                else if (action === 'export-notes-md') exportNotesMarkdown();
+                else if (action === 'toggle-ad-block') {
+                    const newVal = !store.getAdBlockEnabled();
+                    store.setAdBlockEnabled(newVal);
+                    showToast(newVal ? '✅ 广告拦截已开启' : '⚠️ 广告拦截已关闭');
+                    renderSettings();
+                }
             };
         });
+        // v1.6.0: 广告拦截开关初始化
+        const adSwitch = $('#ad-block-toggle');
+        if (adSwitch) adSwitch.checked = store.getAdBlockEnabled();
     }
 
     // ============ 暗黑定时 ============
