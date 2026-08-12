@@ -17,14 +17,18 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.load
+import com.browser.app.ProfileFragmentDirections
 import com.browser.app.R
 import com.browser.app.databinding.FragmentProfileBinding
 import com.browser.app.utils.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
-    private lateinit var preferenceManager: PreferenceManager
+    @Inject lateinit var preferenceManager: PreferenceManager
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -57,7 +61,6 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        preferenceManager = PreferenceManager(requireContext())
         loadAvatar()
         setupClickListeners()
     }
@@ -85,11 +88,11 @@ class ProfileFragment : Fragment() {
         }
 
         binding.historySection.setOnClickListener {
-            findNavController().navigate(R.id.action_profileFragment_to_historyFragment)
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToHistoryFragment())
         }
 
         binding.bookmarksSection.setOnClickListener {
-            findNavController().navigate(R.id.action_profileFragment_to_bookmarksFragment)
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToBookmarksFragment())
         }
 
         binding.settingsSection.setOnClickListener {

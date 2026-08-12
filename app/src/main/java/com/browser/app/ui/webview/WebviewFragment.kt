@@ -10,26 +10,26 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.browser.app.data.BrowserDatabase
+import com.browser.app.WebviewFragmentArgs
 import com.browser.app.databinding.FragmentWebviewBinding
-import com.browser.app.repository.BookmarkRepository
-import com.browser.app.repository.HistoryRepository
-import com.browser.app.repository.WindowRepository
 import com.browser.app.utils.PreferenceManager
 import com.browser.app.utils.SearchEngine
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class WebviewFragment : Fragment() {
     private var _binding: FragmentWebviewBinding? = null
     private val binding get() = _binding!!
-    private lateinit var historyRepository: HistoryRepository
-    private lateinit var bookmarkRepository: BookmarkRepository
-    private lateinit var windowRepository: WindowRepository
-    private lateinit var preferenceManager: PreferenceManager
+    private val viewModel: WebviewViewModel by viewModels()
+    @Inject lateinit var preferenceManager: PreferenceManager
+
     private var currentUrl: String = ""
     private var currentTitle: String = ""
     private var isBookmarked = false
@@ -62,20 +62,16 @@ class WebviewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        historyRepository = HistoryRepository(db.historyDao())
-        bookmarkRepository = BookmarkRepository(db.bookmarkDao())
-        windowRepository = WindowRepository(db.windowDao())
-        preferenceManager = PreferenceManager(requireContext())
 
-        // 修复空 URL 加载导致的崩溃：空时回退到首页
-        val url = arguments?.getString("url") ?: ""
+        // Safe Args 类型安全参数解析，替代手动 arguments?.getString/getLong
+        val args = WebviewFragmentArgs.fromBundle(requireArguments())
+        val url = args.url
         if (url.isBlank()) {
             findNavController().navigateUp()
             return
         }
         currentUrl = url
-        windowId = arguments?.getLong("windowId", -1L) ?: -1L
+        windowId = args.windowId
 
         setupWebview()
         setupToolbar()
@@ -115,17 +111,10 @@ class WebviewFragment : Fragment() {
                 backCallback.isEnabled = binding.webview.canGoBack()
 
                 if (currentUrl.isNotBlank()) {
-                    historyRepository.addHistory(currentTitle, currentUrl)
+                    viewModel.addHistory(currentTitle, currentUrl)
                     // 多窗口真实化：浏览过程中回写当前窗口的 url+title
                     if (windowId >= 0) {
-                        lifecycleScope.launch {
-                            val existing = windowRepository.getWindowById(windowId)
-                            if (existing != null) {
-                                windowRepository.updateWindow(
-                                    existing.copy(url = currentUrl, title = currentTitle, timestamp = System.currentTimeMillis())
-                                )
-                            }
-                        }
+                        viewModel.updateWindow(windowId, currentUrl, currentTitle)
                     }
                 }
             }
@@ -241,7 +230,7 @@ class WebviewFragment : Fragment() {
     private fun observeBookmarkState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                bookmarkRepository.isBookmarked(currentUrl).collect { bookmarked ->
+                viewModel.isBookmarked(currentUrl).collect { bookmarked ->
                     isBookmarked = bookmarked
                     updateBookmarkIcon()
                 }
@@ -258,7 +247,7 @@ class WebviewFragment : Fragment() {
 
     private fun toggleBookmark() {
         lifecycleScope.launch {
-            val added = bookmarkRepository.toggleBookmark(currentTitle, currentUrl)
+            val added = viewModel.toggleBookmark(currentTitle, currentUrl)
             isBookmarked = added
             updateBookmarkIcon()
             val msgRes = if (added) com.browser.app.R.string.bookmark_added

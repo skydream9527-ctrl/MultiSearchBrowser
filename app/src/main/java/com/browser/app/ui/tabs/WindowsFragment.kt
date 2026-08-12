@@ -5,25 +5,28 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.browser.app.R
-import com.browser.app.data.BrowserDatabase
 import com.browser.app.data.entity.WindowEntity
 import com.browser.app.databinding.FragmentWindowsBinding
 import com.browser.app.databinding.ItemWindowBinding
-import com.browser.app.repository.WindowRepository
 import com.browser.app.utils.navigateToWebview
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class WindowsFragment : Fragment() {
     private var _binding: FragmentWindowsBinding? = null
     private val binding get() = _binding!!
-    private lateinit var windowRepository: WindowRepository
+    private val viewModel: WindowsViewModel by viewModels()
     private lateinit var adapter: WindowAdapter
 
     override fun onCreateView(
@@ -37,9 +40,6 @@ class WindowsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        windowRepository = WindowRepository(db.windowDao())
-
         setupRecyclerView()
         observeWindows()
         setupAddButton()
@@ -52,9 +52,7 @@ class WindowsFragment : Fragment() {
                 findNavController().navigateToWebview(window.url, window.id)
             },
             onCloseClick = { window ->
-                lifecycleScope.launch {
-                    windowRepository.deleteWindow(window)
-                }
+                viewModel.deleteWindow(window)
             }
         )
         binding.windowsList.layoutManager = LinearLayoutManager(requireContext())
@@ -62,12 +60,14 @@ class WindowsFragment : Fragment() {
     }
 
     private fun observeWindows() {
-        lifecycleScope.launch {
-            windowRepository.getAllWindows().collect { windows ->
-                adapter.submitList(windows)
-                binding.emptyText.visibility = if (windows.isEmpty()) View.VISIBLE else View.GONE
-                // 窗口数由列表派生，避免之前同时订阅两个 Flow 的浪费
-                binding.windowCount.text = getString(R.string.window_count_format, windows.size)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.windows.collect { windows ->
+                    adapter.submitList(windows)
+                    binding.emptyText.visibility = if (windows.isEmpty()) View.VISIBLE else View.GONE
+                    // 窗口数由列表派生，避免同时订阅两个 Flow 的浪费
+                    binding.windowCount.text = getString(R.string.window_count_format, windows.size)
+                }
             }
         }
     }
@@ -76,7 +76,7 @@ class WindowsFragment : Fragment() {
         binding.addWindowBtn.setOnClickListener {
             // 新建窗口：先入库拿到 id，再带 id 跳 webview
             viewLifecycleOwner.lifecycleScope.launch {
-                val id = windowRepository.addWindow(
+                val id = viewModel.addWindow(
                     title = getString(R.string.new_window_default_title),
                     url = "https://www.baidu.com"
                 )

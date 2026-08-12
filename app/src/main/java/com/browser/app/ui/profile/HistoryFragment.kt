@@ -6,25 +6,28 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.browser.app.R
-import com.browser.app.data.BrowserDatabase
 import com.browser.app.data.entity.HistoryEntity
 import com.browser.app.databinding.FragmentHistoryBinding
 import com.browser.app.databinding.ItemHistoryBinding
-import com.browser.app.repository.HistoryRepository
 import com.browser.app.utils.navigateToWebview
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class HistoryFragment : Fragment() {
     private var _binding: FragmentHistoryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var historyRepository: HistoryRepository
+    private val viewModel: HistoryViewModel by viewModels()
     private lateinit var adapter: HistoryAdapter
 
     override fun onCreateView(
@@ -38,9 +41,6 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        historyRepository = HistoryRepository(db.historyDao())
-
         setupRecyclerView()
         observeHistory()
         setupClearButton()
@@ -60,10 +60,12 @@ class HistoryFragment : Fragment() {
     }
 
     private fun observeHistory() {
-        lifecycleScope.launch {
-            historyRepository.getAllHistory().collect { historyList ->
-                adapter.submitList(historyList)
-                binding.emptyText.visibility = if (historyList.isEmpty()) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.history.collect { historyList ->
+                    adapter.submitList(historyList)
+                    binding.emptyText.visibility = if (historyList.isEmpty()) View.VISIBLE else View.GONE
+                }
             }
         }
     }
@@ -74,9 +76,7 @@ class HistoryFragment : Fragment() {
                 .setTitle(R.string.clear_history)
                 .setMessage(R.string.clear_history_confirm)
                 .setPositiveButton(R.string.action_clear) { _, _ ->
-                    lifecycleScope.launch {
-                        historyRepository.clearHistory()
-                    }
+                    viewModel.clearHistory()
                 }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
@@ -88,9 +88,7 @@ class HistoryFragment : Fragment() {
             .setTitle(R.string.delete_record)
             .setMessage(R.string.confirm_delete_record)
             .setPositiveButton(R.string.action_delete) { _, _ ->
-                lifecycleScope.launch {
-                    historyRepository.deleteHistory(history)
-                }
+                viewModel.deleteHistory(history)
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()

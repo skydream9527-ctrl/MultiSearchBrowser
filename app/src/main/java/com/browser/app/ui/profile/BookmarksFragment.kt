@@ -6,25 +6,28 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.browser.app.R
-import com.browser.app.data.BrowserDatabase
 import com.browser.app.data.entity.BookmarkEntity
 import com.browser.app.databinding.FragmentBookmarksBinding
 import com.browser.app.databinding.ItemBookmarkBinding
-import com.browser.app.repository.BookmarkRepository
 import com.browser.app.utils.navigateToWebview
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class BookmarksFragment : Fragment() {
     private var _binding: FragmentBookmarksBinding? = null
     private val binding get() = _binding!!
-    private lateinit var bookmarkRepository: BookmarkRepository
+    private val viewModel: BookmarksViewModel by viewModels()
     private lateinit var adapter: BookmarkAdapter
 
     override fun onCreateView(
@@ -38,9 +41,6 @@ class BookmarksFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val db = BrowserDatabase.getInstance(requireContext())
-        bookmarkRepository = BookmarkRepository(db.bookmarkDao())
-
         setupRecyclerView()
         observeBookmarks()
     }
@@ -59,10 +59,12 @@ class BookmarksFragment : Fragment() {
     }
 
     private fun observeBookmarks() {
-        lifecycleScope.launch {
-            bookmarkRepository.getAllBookmarks().collect { bookmarks ->
-                adapter.submitList(bookmarks)
-                binding.emptyText.visibility = if (bookmarks.isEmpty()) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.bookmarks.collect { bookmarks ->
+                    adapter.submitList(bookmarks)
+                    binding.emptyText.visibility = if (bookmarks.isEmpty()) View.VISIBLE else View.GONE
+                }
             }
         }
     }
@@ -72,9 +74,7 @@ class BookmarksFragment : Fragment() {
             .setTitle(R.string.delete_bookmark)
             .setMessage(R.string.confirm_delete_bookmark)
             .setPositiveButton(R.string.action_delete) { _, _ ->
-                lifecycleScope.launch {
-                    bookmarkRepository.removeBookmark(bookmark.url)
-                }
+                viewModel.deleteBookmark(bookmark.url)
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()
