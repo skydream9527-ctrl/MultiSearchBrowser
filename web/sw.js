@@ -1,14 +1,15 @@
 /**
  * MultiSearch Browser · Service Worker
- * v1.7.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA 增强
+ * v1.8.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA + i18n
  */
-const CACHE_VERSION = 'msb-v1.7.0';
+const CACHE_VERSION = 'msb-v1.8.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './styles.css',
     './app.js',
     './utils.js',
+    './i18n.js',
     './manifest.json',
 ];
 

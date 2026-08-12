@@ -6,24 +6,44 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.browser.app.data.dao.BookmarkDao
 import com.browser.app.data.dao.HistoryDao
+import com.browser.app.data.dao.NoteDao
+import com.browser.app.data.dao.PasswordDao
+import com.browser.app.data.dao.RssDao
+import com.browser.app.data.dao.UserScriptDao
 import com.browser.app.data.dao.WindowDao
 import com.browser.app.data.entity.BookmarkEntity
 import com.browser.app.data.entity.HistoryEntity
+import com.browser.app.data.entity.NoteEntity
+import com.browser.app.data.entity.PasswordEntity
+import com.browser.app.data.entity.RssEntity
+import com.browser.app.data.entity.RssItemEntity
+import com.browser.app.data.entity.UserScriptEntity
 import com.browser.app.data.entity.WindowEntity
 
 @Database(
     entities = [
         HistoryEntity::class,
         BookmarkEntity::class,
-        WindowEntity::class
+        WindowEntity::class,
+        // v1.9.0: 新增实体
+        RssEntity::class,
+        RssItemEntity::class,
+        NoteEntity::class,
+        PasswordEntity::class,
+        UserScriptEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class BrowserDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun windowDao(): WindowDao
+    // v1.9.0: 新增 DAO
+    abstract fun rssDao(): RssDao
+    abstract fun noteDao(): NoteDao
+    abstract fun passwordDao(): PasswordDao
+    abstract fun userScriptDao(): UserScriptDao
 
     companion object {
         @Volatile

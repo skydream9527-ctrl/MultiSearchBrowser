@@ -34,6 +34,18 @@
             </intent-filter>
         </activity>
 
+        <!-- v1.9.0: 禁用 WorkManager 默认初始化器，使用自定义 Configuration.Provider -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
     </application>
 
 </manifest>

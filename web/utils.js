@@ -197,6 +197,113 @@
         }, duration);
     };
 
+    // ============ v1.8.0: 虚拟列表渲染器 ============
+    // 当列表项 > threshold 时启用虚拟滚动，仅渲染可视区域 + buffer
+    MSBUtils.createVirtualList = (container, options) => {
+        const {
+            items,           // 数据数组
+            itemHeight,      // 单项高度（px）
+            renderItem,      // (item, index) => HTMLElement
+            threshold = 50,  // 启用阈值
+            buffer = 5,      // 上下缓冲项数
+        } = options;
+
+        if (items.length <= threshold) {
+            // 数据量小，直接渲染全部
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            items.forEach((item, i) => frag.appendChild(renderItem(item, i)));
+            container.appendChild(frag);
+            return { update: () => {} };
+        }
+
+        // 虚拟滚动模式
+        const totalHeight = items.length * itemHeight;
+        let spacerTop = container.querySelector('.vl-spacer-top');
+        let spacerBottom = container.querySelector('.vl-spacer-bottom');
+        let contentWrap = container.querySelector('.vl-content');
+
+        if (!spacerTop) {
+            container.innerHTML = '';
+            spacerTop = document.createElement('div');
+            spacerTop.className = 'vl-spacer-top';
+            spacerBottom = document.createElement('div');
+            spacerBottom.className = 'vl-spacer-bottom';
+            contentWrap = document.createElement('div');
+            contentWrap.className = 'vl-content';
+            container.appendChild(spacerTop);
+            container.appendChild(contentWrap);
+            container.appendChild(spacerBottom);
+        }
+
+        const render = () => {
+            const scrollTop = container.scrollTop;
+            const viewHeight = container.clientHeight;
+            const startIdx = Math.max(0, Math.floor(scrollTop / itemHeight) - buffer);
+            const endIdx = Math.min(items.length, Math.ceil((scrollTop + viewHeight) / itemHeight) + buffer);
+
+            spacerTop.style.height = (startIdx * itemHeight) + 'px';
+            spacerBottom.style.height = ((items.length - endIdx) * itemHeight) + 'px';
+            contentWrap.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            for (let i = startIdx; i < endIdx; i++) {
+                frag.appendChild(renderItem(items[i], i));
+            }
+            contentWrap.appendChild(frag);
+        };
+
+        // 监听滚动（节流）
+        let ticking = false;
+        container.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    render();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+
+        render(); // 首次渲染
+
+        return {
+            update(newItems) {
+                if (newItems) items.splice(0, items.length, ...newItems);
+                render();
+            }
+        };
+    };
+
+    // ============ v1.8.0: 图片懒加载 ============
+    MSBUtils.setupLazyImages = (root) => {
+        const imgs = (root || document).querySelectorAll('img[data-src]:not([data-lazy-loaded])');
+        if (!imgs.length) return;
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        img.setAttribute('data-lazy-loaded', '1');
+                        observer.unobserve(img);
+                    }
+                });
+            }, { rootMargin: '50px' });
+            imgs.forEach(img => {
+                img.setAttribute('data-lazy-loaded', '0');
+                observer.observe(img);
+            });
+        } else {
+            // 回退：直接加载
+            imgs.forEach(img => {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                img.setAttribute('data-lazy-loaded', '1');
+            });
+        }
+    };
+
     // ============ 导出 ============
     global.MSBUtils = MSBUtils;
 })(window);

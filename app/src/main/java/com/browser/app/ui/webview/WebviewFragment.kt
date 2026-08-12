@@ -1,10 +1,15 @@
 package com.browser.app.ui.webview
 
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.webkit.SafeBrowsingResponse
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -29,6 +34,7 @@ class WebviewFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: WebviewViewModel by viewModels()
     @Inject lateinit var preferenceManager: PreferenceManager
+    @Inject lateinit var noteRepository: com.browser.app.repository.NoteRepository
 
     private var currentUrl: String = ""
     private var currentTitle: String = ""
@@ -97,6 +103,28 @@ class WebviewFragment : Fragment() {
             cacheMode = WebSettings.LOAD_DEFAULT
             // 远端采用最严格策略，禁止加载任何混合内容
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            // v1.9.0: 默认禁用文件访问，降低本地文件泄露风险
+            allowFileAccess = false
+            allowContentAccess = false
+            // v1.9.0: 禁止通过 file:// 加载的页面访问其他源
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
+            // v1.9.0: 启用 Safe Browsing（API 26+）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                safeBrowsingEnabled = true
+            }
+        }
+
+        // v1.9.0: 注入 JS Bridge，暴露 window.MSB 命名空间
+        binding.webview.addJavascriptInterface(
+            WebAppInterface(requireContext(), noteRepository),
+            "MSB"
+        )
+
+        // v1.9.0: 启用 Cookie 持久化，并接受第三方 Cookie 以兼容登录态
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            setAcceptThirdPartyCookies(binding.webview, true)
         }
 
         binding.webview.webViewClient = object : WebViewClient() {
@@ -110,6 +138,9 @@ class WebviewFragment : Fragment() {
                 // 返回键回调可用性跟随 WebView 历史变化
                 backCallback.isEnabled = binding.webview.canGoBack()
 
+                // v1.9.0: 同步 Cookie 到持久化存储
+                CookieManager.getInstance().flush()
+
                 if (currentUrl.isNotBlank()) {
                     viewModel.addHistory(currentTitle, currentUrl)
                     // 多窗口真实化：浏览过程中回写当前窗口的 url+title
@@ -121,12 +152,26 @@ class WebviewFragment : Fragment() {
 
             override fun onReceivedError(
                 view: WebView?,
-                request: android.webkit.WebResourceRequest?,
-                error: android.webkit.WebResourceError?
+                request: WebResourceRequest?,
+                error: WebResourceError?
             ) {
                 super.onReceivedError(view, request, error)
                 binding.progressBar.visibility = View.GONE
                 binding.swipeRefresh.isRefreshing = false
+            }
+
+            // v1.9.0: Safe Browsing 拦截回调，遇到威胁时回退到安全策略
+            override fun onSafeBrowsingHit(
+                view: WebView?,
+                request: WebResourceRequest?,
+                threatType: Int,
+                callback: SafeBrowsingResponse?
+            ) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    callback?.backToSafety(true)
+                } else {
+                    super.onSafeBrowsingHit(view, request, threatType, callback)
+                }
             }
         }
 
@@ -283,6 +328,8 @@ class WebviewFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        // v1.9.0: 移除 JS Bridge 引用，避免 Context 泄漏
+        binding.webview.removeJavascriptInterface("MSB")
         binding.webview.destroy()
         super.onDestroyView()
         _binding = null

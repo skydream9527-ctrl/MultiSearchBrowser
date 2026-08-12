@@ -8,6 +8,9 @@
 
     // ============ 工具库别名（v1.5.0 起逐步委派到 window.MSBUtils） ============
     const U = window.MSBUtils || {};
+    // v1.8.0: i18n
+    const i18n = window.MSBi18n;
+    function t(key, fb) { return i18n ? i18n.t(key, fb) : (fb || key); }
 
     // ============ v1.7.0: PWA 启动处理 ============
     function handlePwaLaunch() {
@@ -212,11 +215,17 @@
 
     // 5 种主题色预设
     const THEME_COLORS = [
-        { id: 'blue',   primary: '#2196F3', dark: '#1976D2', header: '#2196F3', headerDark: '#1A237E' },
-        { id: 'green',  primary: '#009688', dark: '#00796B', header: '#009688', headerDark: '#004D40' },
-        { id: 'purple', primary: '#9C27B0', dark: '#7B1FA2', header: '#9C27B0', headerDark: '#4A148C' },
-        { id: 'orange', primary: '#FF9800', dark: '#F57C00', header: '#FF9800', headerDark: '#E65100' },
-        { id: 'red',    primary: '#F44336', dark: '#D32F2F', header: '#F44336', headerDark: '#B71C1C' },
+        { id: 'blue',   primary: '#2196F3', dark: '#1976D2', header: '#2196F3', headerDark: '#1A237E', label: '经典蓝' },
+        { id: 'green',  primary: '#009688', dark: '#00796B', header: '#009688', headerDark: '#004D40', label: '森林绿' },
+        { id: 'purple', primary: '#9C27B0', dark: '#7B1FA2', header: '#9C27B0', headerDark: '#4A148C', label: '典雅紫' },
+        { id: 'orange', primary: '#FF9800', dark: '#F57C00', header: '#FF9800', headerDark: '#E65100', label: '活力橙' },
+        { id: 'red',    primary: '#F44336', dark: '#D32F2F', header: '#F44336', headerDark: '#B71C1C', label: '热情红' },
+        // v1.8.0: 新增主题
+        { id: 'teal',   primary: '#00BCD4', dark: '#0097A7', header: '#00BCD4', headerDark: '#006064', label: '青碧' },
+        { id: 'indigo', primary: '#3F51B5', dark: '#303F9F', header: '#3F51B5', headerDark: '#1A237E', label: '靛蓝' },
+        { id: 'pink',   primary: '#E91E63', dark: '#C2185B', header: '#E91E63', headerDark: '#880E4F', label: '樱花粉' },
+        { id: 'brown',  primary: '#795548', dark: '#5D4037', header: '#795548', headerDark: '#3E2723', label: '复古棕' },
+        { id: 'gray',   primary: '#607D8B', dark: '#455A64', header: '#607D8B', headerDark: '#263238', label: '极简灰' },
     ];
 
     // 7 引擎的多源研讨视角定义
@@ -4428,6 +4437,18 @@
         registerCustomProtocol();
         setupLaunchQueue();
         setupFileHandler();
+        // v1.8.0: i18n 初始化
+        if (i18n) {
+            i18n.apply();
+            const langSel = $('#language-select');
+            if (langSel) {
+                langSel.value = i18n.lang;
+                langSel.onchange = (e) => {
+                    i18n.switch(e.target.value);
+                    showToast(e.target.value === 'en' ? 'Language: English' : '语言：中文');
+                };
+            }
+        }
         renderTabs();
 
         $('#search-btn').onclick = handleSearch;
