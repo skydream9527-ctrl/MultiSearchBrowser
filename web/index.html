@@ -16,6 +16,7 @@
                 <h1>搜索浏览器</h1>
                 <div class="search-bar">
                     <input id="search-input" type="text" placeholder="输入搜索内容" autocomplete="off">
+                    <button id="search-voice" class="icon-btn-light" aria-label="语音搜索">🎤</button>
                     <button id="search-btn" aria-label="搜索">🔍</button>
                 </div>
                 <!-- 搜索历史联想下拉 -->
@@ -29,7 +30,10 @@
                 <div class="section-label">快捷入口</div>
                 <div id="quick-links" class="quick-links"></div>
 
-                <!-- AI 多源检索研讨面板（迁移自远端 index.html） -->
+                <!-- 多引擎并行搜索入口 -->
+                <button id="parallel-search-btn" class="btn-parallel">⚡ 多引擎并行搜索</button>
+
+                <!-- AI 多源检索研讨面板 -->
                 <div class="section-label">AI 多源检索研讨</div>
                 <div id="ai-summary-card" class="ai-summary-card">
                     <div class="ai-summary-header">
@@ -40,6 +44,35 @@
                     <div class="ai-summary-body" id="ai-summary-body"></div>
                 </div>
             </div>
+        </section>
+
+        <!-- ============ 多引擎并行搜索 ============ -->
+        <section id="page-parallel" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="home">←</button>
+                <h2>并行搜索</h2>
+                <button id="parallel-config-btn" class="text-btn">引擎</button>
+            </header>
+            <div class="parallel-search-bar">
+                <input id="parallel-input" type="text" placeholder="输入关键词，多引擎同时搜索" autocomplete="off">
+                <button id="parallel-go">⚡ 搜索</button>
+                <button id="parallel-aggregate-btn" class="text-btn">📊 聚合</button>
+            </div>
+            <div id="parallel-grid" class="parallel-grid"></div>
+        </section>
+
+        <!-- ============ 聚合搜索结果 ============ -->
+        <section id="page-aggregated" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="home">←</button>
+                <h2>聚合结果</h2>
+                <span id="aggregated-meta" class="count"></span>
+            </header>
+            <div class="filter-bar">
+                <input id="aggregated-filter" type="text" placeholder="过滤聚合结果..." autocomplete="off">
+            </div>
+            <div id="aggregated-list" class="list"></div>
+            <div id="aggregated-empty" class="empty-state" hidden>暂无聚合结果，输入关键词后点击「聚合」</div>
         </section>
 
         <!-- ============ 多窗口 ============ -->
@@ -57,14 +90,32 @@
 
         <!-- ============ WebView ============ -->
         <section id="page-webview" class="page">
+            <!-- 多标签页栏 -->
+            <div id="tabs-bar" class="tabs-bar">
+                <div id="tabs-list" class="tabs-list"></div>
+                <button id="tab-new" class="tab-new" aria-label="新标签">＋</button>
+            </div>
             <header class="webview-toolbar">
                 <button id="wv-back" class="icon-btn" aria-label="返回">←</button>
                 <input id="wv-url" type="text" placeholder="输入网址或搜索词" autocomplete="off">
+                <button id="wv-find" class="icon-btn" aria-label="页内查找">🔍</button>
                 <button id="wv-bookmark" class="icon-btn" aria-label="收藏">☆</button>
+                <button id="wv-later" class="icon-btn" aria-label="稍后阅读">📥</button>
+                <button id="wv-read" class="icon-btn" aria-label="阅读模式">📖</button>
                 <button id="wv-refresh" class="icon-btn" aria-label="刷新">⟳</button>
+                <button id="wv-font-dec" class="icon-btn" aria-label="缩小字号">A-</button>
+                <button id="wv-font-inc" class="icon-btn" aria-label="放大字号">A+</button>
                 <button id="wv-open-external" class="icon-btn" aria-label="在新标签页打开">↗</button>
             </header>
             <div id="wv-progress" class="progress-bar" hidden></div>
+            <!-- 页内查找栏 -->
+            <div id="wv-find-bar" class="find-bar" hidden>
+                <input id="wv-find-input" type="text" placeholder="查找内容" autocomplete="off">
+                <span id="wv-find-count"></span>
+                <button id="wv-find-prev" class="icon-btn">↑</button>
+                <button id="wv-find-next" class="icon-btn">↓</button>
+                <button id="wv-find-close" class="icon-btn">✕</button>
+            </div>
             <div class="webview-body">
                 <iframe id="wv-frame" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                 <div id="wv-fallback" class="webview-fallback" hidden>
@@ -72,6 +123,16 @@
                     <p class="muted">这是浏览器安全策略，非本项目 bug。</p>
                     <a id="wv-fallback-link" href="#" target="_blank" rel="noopener" class="btn-primary">在新标签页中打开</a>
                 </div>
+            </div>
+            <!-- 阅读模式覆盖层 -->
+            <div id="reading-mode" class="reading-mode" hidden>
+                <div class="reading-toolbar">
+                    <button id="reading-close" class="icon-btn">✕</button>
+                    <span id="reading-title" class="reading-title">阅读模式</span>
+                    <button id="reading-font-dec" class="icon-btn">A-</button>
+                    <button id="reading-font-inc" class="icon-btn">A+</button>
+                </div>
+                <div id="reading-content" class="reading-content"></div>
             </div>
         </section>
 
@@ -95,6 +156,21 @@
                 <div class="card list-item" data-action="bookmarks">
                     <span class="icon">🔖</span>
                     <span class="title">收藏内容</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="later">
+                    <span class="icon">📥</span>
+                    <span class="title">稍后阅读</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="notes">
+                    <span class="icon">📝</span>
+                    <span class="title">划线笔记</span>
+                    <span class="arrow">›</span>
+                </div>
+                <div class="card list-item" data-action="stats">
+                    <span class="icon">📊</span>
+                    <span class="title">数据统计</span>
                     <span class="arrow">›</span>
                 </div>
                 <div class="card list-item" data-action="settings">
@@ -124,12 +200,54 @@
             <header class="page-header">
                 <button class="icon-btn back-btn" data-back="profile">←</button>
                 <h2>收藏内容</h2>
+                <button id="add-folder-btn" class="text-btn">＋ 文件夹</button>
             </header>
             <div class="filter-bar">
                 <input id="bookmarks-filter" type="text" placeholder="搜索收藏内容..." autocomplete="off">
             </div>
             <div id="bookmarks-list" class="list"></div>
             <div id="bookmarks-empty" class="empty-state" hidden>暂无收藏内容</div>
+        </section>
+
+        <!-- ============ 稍后阅读 ============ -->
+        <section id="page-later" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>稍后阅读</h2>
+            </header>
+            <div id="later-list" class="list"></div>
+            <div id="later-empty" class="empty-state" hidden>暂无稍后阅读内容</div>
+        </section>
+
+        <!-- ============ 划线笔记 ============ -->
+        <section id="page-notes" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>划线笔记</h2>
+                <button id="clear-notes-btn" class="text-btn">清空</button>
+            </header>
+            <div class="filter-bar">
+                <input id="notes-filter" type="text" placeholder="搜索笔记..." autocomplete="off">
+            </div>
+            <div id="notes-list" class="list"></div>
+            <div id="notes-empty" class="empty-state" hidden>暂无笔记<br>在阅读模式中选中文本即可添加笔记</div>
+        </section>
+
+        <!-- ============ 数据统计 ============ -->
+        <section id="page-stats" class="page">
+            <header class="page-header">
+                <button class="icon-btn back-btn" data-back="profile">←</button>
+                <h2>数据统计</h2>
+            </header>
+            <div class="container">
+                <div class="stats-cards" id="stats-overview"></div>
+                <div class="section-label">7 天搜索趋势</div>
+                <div class="card"><canvas id="chart-trend" width="320" height="160"></canvas></div>
+                <div class="section-label">引擎使用占比</div>
+                <div class="card"><canvas id="chart-engine" width="320" height="160"></canvas></div>
+                <div class="section-label">常访问站点 Top 5</div>
+                <div id="stats-top-sites" class="list"></div>
+            </div>
         </section>
 
         <!-- ============ 设置 ============ -->
@@ -153,6 +271,10 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+                <div class="card setting-item">
+                    <span class="setting-label">🎨 主题色</span>
+                    <div id="theme-color-picker" class="theme-color-picker"></div>
+                </div>
 
                 <div class="section-label">数据管理</div>
                 <div class="card setting-item" data-action="export">
@@ -172,11 +294,11 @@
                 <div class="section-label">关于</div>
                 <div class="card setting-item static">
                     <span class="setting-label">版本</span>
-                    <span class="setting-value">v1.1.0</span>
+                    <span class="setting-value">v1.3.0</span>
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">功能</span>
-                    <span class="setting-value">7 引擎 · AI 研讨 · 多窗口 · 深色模式</span>
+                    <span class="setting-value">7 引擎 · 并行 · 聚合 · AI · 阅读 · 笔记 · 多标签 · 离线</span>
                 </div>
             </div>
         </section>
@@ -214,7 +336,7 @@
         </div>
     </div>
 
-    <!-- 输入对话框（用于窗口重命名） -->
+    <!-- 输入对话框 -->
     <div id="input-modal" class="modal" hidden>
         <div class="modal-content">
             <h3 id="input-modal-title">输入</h3>
@@ -229,6 +351,18 @@
     <!-- Toast -->
     <div id="toast" class="toast" hidden></div>
 
+    <!-- 划词笔记浮层 -->
+    <div id="note-popover" class="note-popover" hidden>
+        <button id="note-add-btn" class="note-popover-btn">📝 添加笔记</button>
+    </div>
+
     <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>
