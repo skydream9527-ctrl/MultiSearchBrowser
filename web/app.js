@@ -26,6 +26,20 @@
         currentWindowId: 'msb_current_window_id',
     };
 
+    // 7 引擎的多源研讨视角定义（迁移自远端 AI 摘要面板，适配国内引擎）
+    const AI_PERSPECTIVES = {
+        baidu:    { icon: '🔍', label: '百度综合视角',  desc: q => `综合「${q}」的中文互联网权威资料、百科定义与资讯动态。` },
+        sogou:    { icon: '💬', label: '搜狗微信视角',  desc: q => `聚合「${q}」相关的微信公众号深度长文与社交传播内容。` },
+        bilibili: { icon: '📺', label: 'B 站视频视角',  desc: q => `提供「${q}」的视频教程、UP 主讲解与互动评论。` },
+        douyin:   { icon: '🎵', label: '抖音热点视角',  desc: q => `捕捉「${q}」的短视频热点、用户实拍与趋势话题。` },
+        bing:     { icon: '🌐', label: '必应国际视角',  desc: q => `提供「${q}」的国际搜索结果与英文权威资源。` },
+        doubao:   { icon: '🤖', label: '豆包 AI 视角',  desc: q => `字节豆包 AI 对「${q}」的智能问答与多模态生成。` },
+        qianwen:  { icon: '🧠', label: '千问推理视角',  desc: q => `阿里通义千问对「${q}」的深度推理与代码生成。` },
+    };
+
+    // 记录最近一次搜索关键词，用于 AI 面板渲染与复制
+    let lastAiQuery = '';
+
     // ============ 工具函数 ============
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
@@ -210,6 +224,8 @@
             showToast('请输入搜索内容');
             return;
         }
+        // 先更新 AI 多源研讨面板，用户返回首页时即可看到 7 引擎视角
+        renderAiSummary(query);
         const engine = ENGINES.find(e => e.id === store.getSelectedEngine()) || ENGINES[0];
         const url = engine.searchUrl + encodeURIComponent(query);
         openWebview(url, -1);
@@ -490,9 +506,70 @@
         });
     }
 
+    // ============ AI 多源检索研讨面板 ============
+    function renderAiSummary(query) {
+        lastAiQuery = query || '';
+        const body = $('#ai-summary-body');
+        const meta = $('#ai-summary-meta');
+        body.innerHTML = '';
+        if (lastAiQuery) {
+            meta.textContent = `当前关键词：「${lastAiQuery}」 · 点击任一视角块用该引擎搜索`;
+        } else {
+            meta.textContent = '输入关键词后搜索，自动生成 7 引擎多视角研讨';
+        }
+        ENGINES.forEach(engine => {
+            const p = AI_PERSPECTIVES[engine.id];
+            if (!p) return;
+            const q = lastAiQuery || '关键词';
+            const block = document.createElement('div');
+            block.className = 'ai-block';
+            block.innerHTML = `
+                <div class="ai-block-title" style="color:${engine.color}">${p.icon} ${p.label}</div>
+                <div class="ai-block-desc">${escapeHtml(p.desc(q))}</div>
+            `;
+            block.onclick = () => {
+                const url = lastAiQuery
+                    ? engine.searchUrl + encodeURIComponent(lastAiQuery)
+                    : engine.searchUrl;
+                openWebview(url, -1);
+            };
+            body.appendChild(block);
+        });
+    }
+
+    function copyAiReport() {
+        const q = lastAiQuery || $('#search-input').value.trim() || '当前话题';
+        const lines = ENGINES.map(e => {
+            const p = AI_PERSPECTIVES[e.id];
+            return `- ${p.icon} ${p.label}：${p.desc(q)}`;
+        });
+        const text = `【AI 多源检索研讨报告 - ${q}】\n${lines.join('\n')}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                () => showToast('📋 研讨报告已复制到剪贴板'),
+                () => fallbackCopy(text)
+            );
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('📋 研讨报告已复制'); }
+        catch { showToast('复制失败，请手动选择文本'); }
+        document.body.removeChild(ta);
+    }
+
     // ============ 初始化 ============
     function init() {
         renderHome();
+        renderAiSummary(''); // 初始化 AI 多源研讨面板（默认视角）
         setupWebview();
         setupWindowsPage();
         setupHistoryPage();
@@ -504,6 +581,7 @@
         $('#search-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleSearch();
         });
+        $('#ai-copy-btn').onclick = copyAiReport;
 
         // 浏览器返回键支持（hash 路由）
         window.addEventListener('popstate', () => navigateBack());
