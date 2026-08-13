@@ -95,6 +95,26 @@ class ProfileFragment : Fragment() {
             findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToBookmarksFragment())
         }
 
+        binding.rssSection.setOnClickListener {
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRssFragment())
+        }
+
+        binding.notesSection.setOnClickListener {
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToNotesFragment())
+        }
+
+        binding.passwordsSection.setOnClickListener {
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToPasswordsFragment())
+        }
+
+        binding.userScriptsSection.setOnClickListener {
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToUserScriptsFragment())
+        }
+
+        binding.statsSection.setOnClickListener {
+            findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToStatsFragment())
+        }
+
         binding.settingsSection.setOnClickListener {
             Toast.makeText(requireContext(), R.string.settings_coming_soon, Toast.LENGTH_SHORT).show()
         }

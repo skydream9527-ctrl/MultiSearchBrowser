@@ -29,6 +29,21 @@
         <action
             android:id="@+id/action_profileFragment_to_bookmarksFragment"
             app:destination="@id/bookmarksFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_rssFragment"
+            app:destination="@id/rssFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_notesFragment"
+            app:destination="@id/notesFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_passwordsFragment"
+            app:destination="@id/passwordsFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_userScriptsFragment"
+            app:destination="@id/userScriptsFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_statsFragment"
+            app:destination="@id/statsFragment" />
     </fragment>
 
     <fragment
@@ -53,5 +68,30 @@
         android:id="@+id/bookmarksFragment"
         android:name="com.browser.app.ui.profile.BookmarksFragment"
         android:label="收藏内容" />
+
+    <fragment
+        android:id="@+id/rssFragment"
+        android:name="com.browser.app.ui.profile.RssFragment"
+        android:label="RSS 订阅" />
+
+    <fragment
+        android:id="@+id/notesFragment"
+        android:name="com.browser.app.ui.profile.NotesFragment"
+        android:label="划线笔记" />
+
+    <fragment
+        android:id="@+id/passwordsFragment"
+        android:name="com.browser.app.ui.profile.PasswordsFragment"
+        android:label="密码管理" />
+
+    <fragment
+        android:id="@+id/userScriptsFragment"
+        android:name="com.browser.app.ui.profile.UserScriptsFragment"
+        android:label="用户脚本" />
+
+    <fragment
+        android:id="@+id/statsFragment"
+        android:name="com.browser.app.ui.profile.StatsFragment"
+        android:label="数据统计" />
 
 </navigation>
