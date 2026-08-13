@@ -22,6 +22,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.browser.app.WebviewFragmentArgs
 import com.browser.app.databinding.FragmentWebviewBinding
+import com.browser.app.repository.BookmarkRepository
+import com.browser.app.repository.HistoryRepository
+import com.browser.app.repository.NoteRepository
+import com.browser.app.repository.PasswordRepository
+import com.browser.app.repository.RssRepository
+import com.browser.app.repository.UserScriptRepository
+import com.browser.app.repository.WindowRepository
 import com.browser.app.utils.PreferenceManager
 import com.browser.app.utils.SearchEngine
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,7 +41,14 @@ class WebviewFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: WebviewViewModel by viewModels()
     @Inject lateinit var preferenceManager: PreferenceManager
-    @Inject lateinit var noteRepository: com.browser.app.repository.NoteRepository
+    // v2.1.0: 注入全部 Repository，供 WebAppInterface 打通 Room ↔ Web 数据通道
+    @Inject lateinit var bookmarkRepository: BookmarkRepository
+    @Inject lateinit var historyRepository: HistoryRepository
+    @Inject lateinit var noteRepository: NoteRepository
+    @Inject lateinit var passwordRepository: PasswordRepository
+    @Inject lateinit var rssRepository: RssRepository
+    @Inject lateinit var userScriptRepository: UserScriptRepository
+    @Inject lateinit var windowRepository: WindowRepository
 
     private var currentUrl: String = ""
     private var currentTitle: String = ""
@@ -161,7 +175,13 @@ class WebviewFragment : Fragment() {
                     view?.addJavascriptInterface(
                         WebAppInterface(
                             requireContext(),
+                            bookmarkRepository,
+                            historyRepository,
                             noteRepository,
+                            passwordRepository,
+                            rssRepository,
+                            userScriptRepository,
+                            windowRepository,
                             viewLifecycleOwner.lifecycleScope
                         ),
                         "MSB"

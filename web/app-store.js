@@ -9,6 +9,25 @@
     const K = window.MSBConstants.STORAGE_KEYS;
     const storage = window.MSBUtils.safeStorage;
 
+    // v2.1.0: 检测 Android WebView JS Bridge（window.MSB）是否可用
+    // native 模式下读优先走 Bridge（Room 数据库），写双写（Bridge + localStorage）
+    const isNativeBridge = typeof window.MSB !== 'undefined' && typeof window.MSB.getBookmarksJson === 'function';
+
+    /**
+     * 安全调用 Bridge 读取方法并解析 JSON，失败时返回 null（由调用方降级 localStorage）。
+     * @param {string} fnName - window.MSB 上的方法名
+     * @returns {Array|null} 解析后的数组，失败返回 null
+     */
+    const readBridgeJson = (fnName) => {
+        try {
+            const raw = window.MSB[fnName]();
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch {
+            return null;
+        }
+    };
+
     // 闭包内 store 自引用，方法间互调用 store.xxx()
     const store = {
         // ============ 基础 ============
@@ -34,15 +53,28 @@
         deleteWindow: (id) => store.saveWindows(store.getWindows().filter(w => w.id !== id)),
 
         // ============ 书签 ============
-        getBookmarks: () => storage.get(K.bookmarks, []),
+        // v2.1.0: native 模式下读优先走 Bridge（Room），失败降级 localStorage
+        getBookmarks: () => {
+            if (isNativeBridge) {
+                const bridge = readBridgeJson('getBookmarksJson');
+                if (bridge !== null) return bridge;
+            }
+            return storage.get(K.bookmarks, []);
+        },
         saveBookmarks: (list) => storage.set(K.bookmarks, list),
         isBookmarked: (url) => store.getBookmarks().some(b => b.url === url),
+        // v2.1.0: native 模式下双写（Bridge + localStorage）
         toggleBookmark: (title, url) => {
             const list = store.getBookmarks();
             const idx = list.findIndex(b => b.url === url);
-            if (idx >= 0) { list.splice(idx, 1); store.saveBookmarks(list); return false; }
+            if (idx >= 0) {
+                list.splice(idx, 1); store.saveBookmarks(list);
+                if (isNativeBridge) { try { window.MSB.removeBookmark(url); } catch {} }
+                return false;
+            }
             list.unshift({ id: Date.now(), title, url, timestamp: Date.now(), folder: '' });
             store.saveBookmarks(list);
+            if (isNativeBridge) { try { window.MSB.addBookmark(title, url); } catch {} }
             return true;
         },
         moveBookmark: (url, folder) => {
@@ -50,7 +82,11 @@
             const b = list.find(b => b.url === url);
             if (b) { b.folder = folder; store.saveBookmarks(list); }
         },
-        deleteBookmark: (url) => store.saveBookmarks(store.getBookmarks().filter(b => b.url !== url)),
+        // v2.1.0: native 模式下双写（Bridge + localStorage）
+        deleteBookmark: (url) => {
+            store.saveBookmarks(store.getBookmarks().filter(b => b.url !== url));
+            if (isNativeBridge) { try { window.MSB.removeBookmark(url); } catch {} }
+        },
 
         getBookmarkFolders: () => storage.get(K.bookmarkFolders, []),
         addBookmarkFolder: (name) => {
@@ -64,7 +100,14 @@
         },
 
         // ============ 历史 ============
-        getHistory: () => storage.get(K.history, []),
+        // v2.1.0: native 模式下读优先走 Bridge（Room 最近 100 条），失败降级 localStorage
+        getHistory: () => {
+            if (isNativeBridge) {
+                const bridge = readBridgeJson('getHistoryJson');
+                if (bridge !== null) return bridge;
+            }
+            return storage.get(K.history, []);
+        },
         saveHistory: (list) => storage.set(K.history, list),
         addHistory: (title, url) => {
             const list = store.getHistory();
@@ -112,7 +155,14 @@
         deleteLater: (id) => storage.set(K.laterList, store.getLaterList().filter(l => l.id !== id)),
 
         // ============ v1.3.0: 划线笔记 ============
-        getNotes: () => storage.get(K.notes, []),
+        // v2.1.0: native 模式下读优先走 Bridge（Room），失败降级 localStorage
+        getNotes: () => {
+            if (isNativeBridge) {
+                const bridge = readBridgeJson('getNotesJson');
+                if (bridge !== null) return bridge;
+            }
+            return storage.get(K.notes, []);
+        },
         addNote: (text, source, sourceUrl) => {
             const list = store.getNotes();
             list.unshift({ id: Date.now(), text, source: source || '', sourceUrl: sourceUrl || '', timestamp: Date.now() });
