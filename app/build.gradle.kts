@@ -4,6 +4,8 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("androidx.navigation.safeargs.kotlin")
+    // v2.0.0: detekt 静态代码分析
+    id("io.gitlab.arturbosch.detekt") version "1.23.4"
 }
 
 android {
@@ -57,6 +59,18 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    // v2.0.0: Room schema 导出目录（exportSchema = true 时用于 Migration 验证）
+    ksp {
+        arg("room.schemaLocation", "${projectDir}/schemas")
+    }
+}
+
+// v2.0.0: detekt 配置
+detekt {
+    buildUponDefaultConfig = true
+    config = files("$projectDir/detekt.yml")
+    parallel = true
 }
 
 dependencies {
@@ -84,6 +98,12 @@ dependencies {
     ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     testImplementation("junit:junit:4.13.2")
+    // v2.0.0: 单元测试增强
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("androidx.room:room-testing:2.6.1")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }

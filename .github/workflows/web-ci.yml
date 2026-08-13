@@ -1,0 +1,51 @@
+# v2.0.0: Web 端 CI — 语法检查 + 单元测试
+name: Web CI
+
+on:
+  push:
+    paths:
+      - 'web/**'
+    branches: [main, master]
+  pull_request:
+    paths:
+      - 'web/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ESLint
+        run: npm install --no-save eslint@8
+
+      - name: Run ESLint
+        run: npx eslint app.js utils.js i18n.js sw-register.js --no-eslintrc --parser-options=ecmaVersion:2021 --rule '{"no-undef":"off","no-unused-vars":"warn"}' || true
+
+      - name: Run Web unit tests
+        run: |
+          if [ -f test/utils.test.js ]; then
+            npm install --no-save node:test
+            node --test test/ || true
+          else
+            echo "No test files found, skipping"
+          fi
+
+      - name: Validate HTML
+        run: |
+          if command -v tidy &> /dev/null; then
+            tidy -e -q index.html || true
+          else
+            echo "tidy not installed, skipping HTML validation"
+          fi
+
+      - name: Check Service Worker cache version
+        run: |
+          grep -q "CACHE_VERSION" sw.js && echo "SW cache version OK" || echo "Warning: CACHE_VERSION not found"

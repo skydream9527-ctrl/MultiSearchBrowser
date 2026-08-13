@@ -1,0 +1,56 @@
+# v2.0.0: detekt 静态代码分析配置
+# https://detekt.dev/docs/introduction/configurations
+
+complexity:
+  active: true
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+  ComplexCondition:
+    threshold: 5
+  CyclomaticComplexMethod:
+    threshold: 20
+  TooManyFunctions:
+    thresholdInFiles: 15
+  LargeClass:
+    threshold: 250
+
+style:
+  active: true
+  WildcardImport:
+    active: false  # 允许通配符导入
+  ReturnCount:
+    active: false  # 允许提前返回
+  MagicNumber:
+    active: false  # 允许魔法数字（Android 资源 ID 等）
+  MaxLineLength:
+    maxLineLength: 140
+  ForbiddenComment:
+    active: false  # 允许 TODO/FIXME
+
+empty-blocks:
+  active: true
+
+exceptions:
+  active: true
+  SwallowedException:
+    active: false  # 允许吞没异常（catch 块中忽略）
+
+naming:
+  active: true
+  FunctionNaming:
+    functionPattern: '([a-z][a-zA-Z0-9]*)|(`.*`)'
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+
+potential-bugs:
+  active: true
+  UnsafeCallOnNullableType:
+    active: false  # 允许 !! 操作符
+
+performance:
+  active: true
+  ForEachOnRange:
+    active: false  # 允许 forEach on range

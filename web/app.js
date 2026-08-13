@@ -272,6 +272,23 @@
     const load = (key, def = null) => U.safeStorage.get(key, def);
     const save = (key, val) => U.safeStorage.set(key, val);
 
+    // v2.0.0: CORS 代理多 fallback，避免单一代理宕机时 RSS/聚合搜索全部失效
+    const CORS_PROXIES = [
+        'https://corsproxy.io/?url=',
+        'https://api.allorigins.win/raw?url=',
+        'https://api.codetabs.com/v1/proxy/?quest=',
+    ];
+    async function fetchWithCorsFallback(targetUrl, options) {
+        for (const proxy of CORS_PROXIES) {
+            try {
+                const res = await fetch(proxy + encodeURIComponent(targetUrl), options);
+                if (res.ok) return res;
+            } catch {}
+        }
+        // 最后兜底：直接请求（CORS 可能失败但不阻塞）
+        return fetch(targetUrl, options);
+    }
+
     const formatTime = (ts) => {
         const d = new Date(ts);
         const pad = (n) => String(n).padStart(2, '0');
@@ -2187,8 +2204,7 @@
     }
 
     async function fetchRssFeed(feed) {
-        const proxied = 'https://corsproxy.io/?url=' + encodeURIComponent(feed.url);
-        const res = await fetch(proxied);
+        const res = await fetchWithCorsFallback(feed.url);
         const text = await res.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, 'text/xml');
@@ -4074,7 +4090,7 @@
     async function fetchEngineResults(engine, query) {
         const url = engine.searchUrl + encodeURIComponent(query);
         try {
-            const res = await fetch(CORS_PROXY + encodeURIComponent(url), {
+            const res = await fetchWithCorsFallback(url, {
                 headers: { 'Accept': 'text/html' }
             });
             const html = await res.text();

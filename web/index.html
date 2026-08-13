@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2196F3">
     <title>MultiSearch Browser · Web 版</title>
+    <!-- v2.0.0 SEO: meta description + Open Graph + Twitter Card + JSON-LD -->
+    <meta name="description" content="MultiSearch Browser — 多搜索引擎并行搜索浏览器 PWA，支持 7 引擎同屏搜索、AI 摘要、阅读模式、划线笔记、RSS 订阅、密码管理、跨设备同步。">
+    <meta name="keywords" content="多搜索引擎,并行搜索,聚合搜索,AI摘要,阅读模式,PWA,浏览器,RSS,密码管理,跨设备同步">
+    <meta name="author" content="MultiSearchBrowser">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MultiSearch Browser · 多引擎并行搜索 PWA">
+    <meta property="og:description" content="7 引擎同屏搜索 · AI 摘要 · 阅读模式 · 划线笔记 · RSS · 密码管理 · 跨设备同步">
+    <meta property="og:site_name" content="MultiSearch Browser">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MultiSearch Browser · 多引擎并行搜索 PWA">
+    <meta name="twitter:description" content="7 引擎同屏搜索 · AI 摘要 · 阅读模式 · 划线笔记 · RSS · 密码管理 · 跨设备同步">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MultiSearch Browser",
+        "description": "多搜索引擎并行搜索浏览器 PWA",
+        "applicationCategory": "BrowserApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+        "featureList": [
+            "7 引擎并行搜索", "AI 多源摘要", "阅读模式 TTS", "划线笔记",
+            "RSS 订阅", "密码管理 AES-256", "跨设备同步", "PWA 离线"
+        ]
+    }
+    </script>
     <!-- v2.0.0 安全加固：CSP 限制脚本/样式/连接来源，阻止内联脚本与 XSS -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src * data: https:; connect-src * https: http:; font-src 'self' data:; frame-src * https: http:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <link rel="stylesheet" href="styles.css">

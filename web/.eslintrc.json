@@ -1,0 +1,42 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "globals": {
+    "MSBUtils": "readonly",
+    "MSBi18n": "readonly",
+    "CryptoJS": "readonly",
+    "html2canvas": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "script"
+  },
+  "rules": {
+    "no-undef": "error",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "no-prototype-builtins": "off",
+    "prefer-const": "warn",
+    "no-var": "error",
+    "eqeqeq": ["warn", "smart"],
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+    "no-self-assign": "error",
+    "no-self-compare": "error",
+    "no-unused-expressions": "off",
+    "no-useless-escape": "warn",
+    "no-mixed-spaces-and-tabs": "error",
+    "no-trailing-spaces": "warn",
+    "semi": ["warn", "always"],
+    "quotes": ["warn", "single", { "allowTemplateLiterals": true }],
+    "indent": ["warn", 4, { "SwitchCase": 1 }],
+    "comma-dangle": ["warn", "only-multiline"],
+    "space-before-function-paren": ["warn", "never"]
+  }
+}

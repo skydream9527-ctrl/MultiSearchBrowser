@@ -1242,6 +1242,41 @@ a { color: inherit; text-decoration: none; }
     gap: 3px;
     padding: 8px 0;
 }
+
+/* ============ v2.0.0: 无障碍媒体查询 ============ */
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* 尊重系统深色模式偏好（未手动切换时自动跟随） */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme-explicit]) {
+        --bg: #121212;
+        --text-primary: #E0E0E0;
+        --text-secondary: #A0A0A0;
+        --card-bg: #1E1E1E;
+        --border: #333333;
+    }
+}
+
+/* 窄屏适配 */
+@media (max-width: 480px) {
+    .parallel-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .webview-toolbar {
+        flex-wrap: wrap;
+    }
+    .stats-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
 .heatmap-cell {
     aspect-ratio: 1;
     border-radius: 2px;

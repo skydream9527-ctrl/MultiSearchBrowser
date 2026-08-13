@@ -35,7 +35,7 @@ import com.browser.app.data.entity.WindowEntity
         UserScriptEntity::class
     ],
     version = 2,
-    exportSchema = false
+    exportSchema = true  // v2.0.0: 导出 schema 用于 Migration 验证
 )
 abstract class BrowserDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
