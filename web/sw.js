@@ -2,12 +2,14 @@
  * MultiSearch Browser · Service Worker
  * v2.0.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA + i18n + CSP 配套
  */
-const CACHE_VERSION = 'msb-v2.0.0';
+const CACHE_VERSION = 'msb-v2.1.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './styles.css',
     './app.js',
+    './constants.js',
+    './app-store.js',
     './utils.js',
     './i18n.js',
     './sw-register.js',
