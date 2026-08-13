@@ -57,6 +57,14 @@ class WebviewFragment : Fragment() {
         }
     }
 
+    companion object {
+        /**
+         * 跨 Fragment 重建保留 WebView 状态（历史栈、表单数据等）。
+         * Fragment 实例可能被销毁重建，成员变量无法存活，故使用 companion object 静态持有。
+         */
+        private var savedWebviewState: Bundle? = null
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -82,7 +90,13 @@ class WebviewFragment : Fragment() {
         setupWebview()
         setupToolbar()
         setupBackCallback()
-        loadUrl(url)
+        // 优先尝试从已保存的状态恢复 WebView；恢复失败（无历史）才加载初始 URL
+        val restored = savedWebviewState?.let { state ->
+            binding.webview.restoreState(state) != null
+        } ?: false
+        if (!restored) {
+            loadUrl(url)
+        }
         observeBookmarkState()
     }
 
@@ -112,6 +126,26 @@ class WebviewFragment : Fragment() {
             // v1.9.0: 启用 Safe Browsing（API 26+）
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = true
+            }
+            // 启用表单数据保存（已废弃，API 23+ 由系统 AutofillService 接管）
+            // 保留以兼容旧设备，让 WebView 的输入框能接收系统自动填充建议
+            @Suppress("DEPRECATION")
+            setSaveFormData(true)
+        }
+
+        // 启用 WebView 自动填充支持（API 26+）
+        // WebView 原生 onCreateInputConnection 已实现 Autofill 框架接入，
+        // 通过 importantForAutofill=YES 让系统知道此视图可接收自动填充建议，
+        // 当用户聚焦表单字段时，系统 AutofillService（如 Google 自动填充）会弹出建议
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            binding.webview.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
+            // WebView 获得焦点时主动通知系统触发自动填充扫描
+            binding.webview.setOnFocusChangeListener { v, hasFocus ->
+                if (hasFocus) {
+                    v.notifyViewEntered()
+                } else {
+                    v.notifyViewExited()
+                }
             }
         }
 
@@ -359,6 +393,10 @@ class WebviewFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         binding.webview.onPause()
+        // 保存 WebView 状态到 companion object 的 Bundle，供 Fragment 重建时恢复
+        val outState = Bundle()
+        binding.webview.saveState(outState)
+        savedWebviewState = outState
     }
 
     override fun onResume() {
@@ -369,6 +407,10 @@ class WebviewFragment : Fragment() {
     override fun onDestroyView() {
         // v1.9.0: 移除 JS Bridge 引用，避免 Context 泄漏
         binding.webview.removeJavascriptInterface("MSB")
+        // View 销毁前再次保存 WebView 状态，确保 destroy 后仍可在重建时恢复
+        val outState = Bundle()
+        binding.webview.saveState(outState)
+        savedWebviewState = outState
         binding.webview.destroy()
         super.onDestroyView()
         _binding = null

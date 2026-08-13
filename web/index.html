@@ -581,7 +581,7 @@
     <div id="pwd-unlock-modal" class="modal-overlay" hidden>
         <div class="modal-card">
             <h3 id="pwd-unlock-title">🔑 输入主密码</h3>
-            <input id="pwd-unlock-input" type="password" placeholder="主密码" autocomplete="off">
+            <input id="pwd-unlock-input" type="password" placeholder="主密码" autocomplete="current-password">
             <div class="modal-actions">
                 <button id="pwd-unlock-cancel" class="btn-text">取消</button>
                 <button id="pwd-unlock-ok" class="btn-primary">解锁</button>
@@ -603,7 +603,7 @@
             </div>
             <input id="sync-url" type="text" placeholder="WebDAV URL 或 Gist ID" autocomplete="off">
             <input id="sync-user" type="text" placeholder="WebDAV 账号 或 GitHub Token" autocomplete="off" style="margin-top:8px">
-            <input id="sync-pass" type="password" placeholder="WebDAV 密码 或 Gist 文件名" autocomplete="off" style="margin-top:8px">
+            <input id="sync-pass" type="password" placeholder="WebDAV 密码 或 Gist 文件名" autocomplete="new-password" style="margin-top:8px">
             <div class="modal-actions">
                 <button id="sync-cancel" class="btn-text">取消</button>
                 <button id="sync-save" class="btn-primary">保存</button>

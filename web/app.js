@@ -238,11 +238,13 @@
         cancel.onclick = () => { cleanup(); resolve(false); };
     });
 
-    const inputDialog = (title, defaultValue = '') => new Promise((resolve) => {
+    const inputDialog = (title, defaultValue = '', autocomplete = 'off') => new Promise((resolve) => {
         const modal = $('#input-modal');
         $('#input-modal-title').textContent = title;
         const field = $('#input-modal-field');
         field.value = defaultValue;
+        // 根据输入类型动态设置 autocomplete，让浏览器/系统提供对应的自动填充建议
+        field.setAttribute('autocomplete', autocomplete);
         modal.hidden = false;
         setTimeout(() => { field.focus(); field.select(); }, 50);
         const ok = $('#input-modal-ok'), cancel = $('#input-modal-cancel');
@@ -257,6 +259,39 @@
 
     // v2.1.0: store 已抽离到 app-store.js，此处通过 window.MSBStore 引用
     // v2.1.0: 常量已抽离到 constants.js
+
+    // ============ Credential Management API 渐进增强 ============
+    // 浏览器不支持时静默降级，不影响现有密码管理功能
+    const credApi = {
+        // 保存凭据到浏览器凭据存储（与本地加密存储独立，互不影响）
+        async store(site, username, password) {
+            try {
+                if (!navigator.credentials || !window.PasswordCredential) return;
+                const cred = new PasswordCredential({
+                    id: username || site,
+                    password: password,
+                    name: site
+                });
+                await navigator.credentials.store(cred);
+            } catch (e) {
+                // Credential API 不支持时静默降级
+            }
+        },
+        // 从浏览器凭据存储静默获取凭据（用于触发浏览器自动填充联想）
+        async get() {
+            try {
+                if (!navigator.credentials) return null;
+                const cred = await navigator.credentials.get({
+                    password: true,
+                    mediation: 'silent'
+                });
+                return cred;
+            } catch (e) {
+                // Credential API 不支持时静默降级
+                return null;
+            }
+        }
+    };
 
     // 获取所有引擎（内置 + 自定义）
     function getAllEngines() {
@@ -368,6 +403,17 @@
         if (!query) {
             showToast('请输入搜索内容');
             return;
+        }
+        // 离线检测：网络不可用时先查本地历史记录
+        if (navigator.onLine === false) {
+            const history = store.getSearchHistory();
+            const matched = history.filter(q => q.toLowerCase().includes(query.toLowerCase()));
+            if (matched.length > 0) {
+                // 本地历史有匹配，显示离线结果提示
+                showToast('离线结果：已从本地历史记录中找到 ' + matched.length + ' 条匹配项');
+            } else {
+                showToast('离线模式：本地历史无匹配，可能无法获取新结果');
+            }
         }
         // 记录搜索历史
         store.addSearchHistory(query);
@@ -1332,30 +1378,75 @@
         historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    async function callLlmChat(messages) {
+    async function callLlmChat(messages, opts = {}) {
+        const { withSourceContext = true } = opts;
         const cfg = store.getLlmConfig();
-        if (!cfg || !cfg.apiKey) throw new Error('未配置 LLM API Key');
-        // 发送时附带截断的原文作为最后一条 system 上下文
+        // 错误处理：API key 未配置时提示用户去设置页配置
+        if (!cfg || !cfg.apiKey) {
+            throw new Error('未配置 LLM API Key，请到设置页 → LLM 配置中填写');
+        }
+        const provider = cfg.provider || 'qianwen';
+
+        // 统一以 OpenAI 兼容的 messages 作为输入；追问场景下附带截断原文作为 system 上下文
         const fullMessages = [...messages];
-        if (summarySourceText) {
+        if (withSourceContext && summarySourceText) {
             const ctx = summarySourceText.length > 3000 ? summarySourceText.slice(0, 3000) + '...' : summarySourceText;
             fullMessages.push({ role: 'system', content: `参考原文（仅用于回答追问）：\n${ctx}` });
         }
-        const res = await fetch(cfg.apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${cfg.apiKey}`
-            },
-            body: JSON.stringify({
-                model: cfg.model,
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cfg.apiKey}`
+        };
+
+        // 根据不同 provider 构建 endpoint 与请求体
+        let endpoint, body, parseResponse;
+        if (provider === 'qianwen') {
+            // 通义千问：自有 generation 接口，需将 messages 包装到 input 字段（与 OpenAI 格式不同）
+            endpoint = 'https://dashscope.aliyuncs.com/api/v1/services/aio/generation/generation';
+            body = {
+                model: cfg.model || 'qwen-turbo',
+                input: { messages: fullMessages }
+            };
+            parseResponse = (data) => data.output?.choices?.[0]?.message?.content || data.output?.text || '无返回';
+        } else if (provider === 'deepseek') {
+            // DeepSeek：OpenAI 兼容格式
+            endpoint = 'https://api.deepseek.com/v1/chat/completions';
+            body = {
+                model: cfg.model || 'deepseek-chat',
                 messages: fullMessages,
                 max_tokens: 800
-            })
+            };
+            parseResponse = (data) => data.choices?.[0]?.message?.content || '无返回';
+        } else if (provider === 'doubao') {
+            // 豆包：OpenAI 兼容格式
+            endpoint = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+            body = {
+                model: cfg.model || 'doubao-pro-4k',
+                messages: fullMessages,
+                max_tokens: 800
+            };
+            parseResponse = (data) => data.choices?.[0]?.message?.content || '无返回';
+        } else {
+            // custom：使用用户配置的 apiUrl，按 OpenAI 兼容格式请求
+            if (!cfg.apiUrl) throw new Error('未配置自定义 API URL，请到设置页填写');
+            endpoint = cfg.apiUrl;
+            body = {
+                model: cfg.model || 'gpt-3.5-turbo',
+                messages: fullMessages,
+                max_tokens: 800
+            };
+            parseResponse = (data) => data.choices?.[0]?.message?.content || data.output?.text || '无返回';
+        }
+
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body)
         });
-        if (!res.ok) throw new Error(`API 返回 ${res.status}`);
+        if (!res.ok) throw new Error(`LLM API 返回 ${res.status}`);
         const data = await res.json();
-        return data.choices?.[0]?.message?.content || data.output?.text || '无返回';
+        return parseResponse(data);
     }
 
     // 本地追问回答（基于 TextRank 数据的简单启发式）
@@ -1522,25 +1613,15 @@
     async function generateLlmSummary(text) {
         const cfg = store.getLlmConfig();
         if (!cfg || !cfg.apiKey) {
-            throw new Error('未配置 LLM API Key');
+            throw new Error('未配置 LLM API Key，请到设置页 → LLM 配置中填写');
         }
         const truncated = text.length > 4000 ? text.slice(0, 4000) + '...' : text;
         const prompt = `请对以下内容生成中文摘要，包含：1) 3 句话核心摘要 2) 5-8 个关键词 3) 主要观点列表。\n\n内容：${truncated}`;
-        const res = await fetch(cfg.apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${cfg.apiKey}`
-            },
-            body: JSON.stringify({
-                model: cfg.model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 800
-            })
-        });
-        if (!res.ok) throw new Error(`API 返回 ${res.status}`);
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content || data.output?.text || '无返回';
+        // 复用 callLlmChat 统一对接各 provider；摘要生成不需要再附带原文上下文（原文已在 prompt 中）
+        const content = await callLlmChat(
+            [{ role: 'user', content: prompt }],
+            { withSourceContext: false }
+        );
         return `<div class="sp-section"><div class="sp-section-title">🤖 LLM 摘要</div><div style="white-space:pre-wrap">${escapeHtml(content)}</div></div>`;
     }
 
@@ -1878,6 +1959,17 @@
             }
             editPassword(null);
         };
+        // 渐进增强：页面加载时尝试从浏览器凭据存储获取已保存的凭据
+        // 触发浏览器/系统的自动填充联想，Credential API 不支持时静默降级
+        // 注意：不自动合并到应用密码库，避免与本地加密存储产生重复
+        credApi.get().then(cred => {
+            if (cred) {
+                // 浏览器凭据存储中存在凭据，可用于后续表单自动填充
+                // 此处仅触发凭据预取，不修改应用内的密码列表
+            }
+        }).catch(() => {
+            // 静默降级
+        });
     }
 
     function editPassword(existing) {
@@ -1890,11 +1982,12 @@
         const inputEl = $('#pwd-unlock-input');
         // 用 prompt 链式输入更简单
         (async () => {
-            const newSite = await inputDialog('站点名', site);
+            // 为各输入字段设置合适的 autocomplete，让浏览器/系统提供自动填充建议
+            const newSite = await inputDialog('站点名', site, 'off');
             if (newSite === null) return;
-            const newUser = await inputDialog('用户名', username);
+            const newUser = await inputDialog('用户名', username, 'username');
             if (newUser === null) return;
-            const newPwd = await inputDialog('密码（留空自动生成）', password);
+            const newPwd = await inputDialog('密码（留空自动生成）', password, 'new-password');
             if (newPwd === null) return;
             const finalPwd = newPwd || generatePassword(16);
             // v1.5.0: 显示密码强度
@@ -1913,6 +2006,9 @@
                 list.push({ id: Date.now(), site: newSite, username: newUser, password: finalPwd });
             }
             store.savePasswords(list, masterPwdSession);
+            // 渐进增强：同步到浏览器凭据存储，便于后续表单自动填充
+            // 与本地加密存储独立，Credential API 不支持时静默降级
+            credApi.store(newSite, newUser, finalPwd);
             renderPasswords();
             showToast('✅ 已保存');
         })();
@@ -2372,6 +2468,7 @@
         $('#sync-cancel').onclick = () => { modal.hidden = true; };
     }
 
+    // 根据 syncConfig.type 分发同步：下载远程 → 合并 → 上传合并结果
     async function syncNow() {
         const cfg = store.getSyncConfig();
         if (cfg.type === 'off' || !cfg.url) {
@@ -2385,64 +2482,276 @@
             } else if (cfg.type === 'gist') {
                 await syncGist(cfg);
             }
+            // 同步完成后更新 lastSync 时间戳
+            cfg.lastSync = Date.now();
+            store.setSyncConfig(cfg);
             showToast('✅ 同步成功');
         } catch (e) {
-            showToast('❌ 同步失败：' + e.message);
+            showToast('❌ 同步失败：' + (e && e.message ? e.message : '网络错误'));
         }
     }
 
+    // WebDAV 同步：PUT/GET {url}/msb-backup.json，使用 Basic Auth
+    // WebDAV 服务器通常不支持 CORS，需通过 fetchWithCorsFallback 走代理
     async function syncWebDAV(cfg) {
-        const data = exportDataRaw();
-        const url = cfg.url.replace(/\/$/, '') + '/multisearch-backup.json';
-        const auth = btoa(cfg.user + ':' + cfg.pass);
-        const res = await fetch(url, {
+        const baseUrl = cfg.url.replace(/\/$/, '');
+        const fileUrl = `${baseUrl}/msb-backup.json`;
+        const auth = 'Basic ' + btoa(cfg.user + ':' + cfg.pass);
+        const headers = {
+            'Authorization': auth,
+            'Content-Type': 'application/json'
+        };
+
+        // 1. 下载远程数据（首次同步文件不存在时忽略错误）
+        let remoteData = null;
+        try {
+            const getRes = await fetchWithCorsFallback(fileUrl, { method: 'GET', headers });
+            if (getRes && getRes.ok) {
+                const text = await getRes.text();
+                if (text) {
+                    try { remoteData = JSON.parse(text); } catch {}
+                }
+            }
+        } catch {}
+
+        // 2. 合并本地与远程
+        const localData = exportDataRaw();
+        const merged = mergeSyncData(localData, remoteData);
+
+        // 3. 上传合并结果
+        const putRes = await fetchWithCorsFallback(fileUrl, {
             method: 'PUT',
-            headers: {
-                'Authorization': 'Basic ' + auth,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+            headers,
+            body: JSON.stringify(merged)
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!putRes || !putRes.ok) {
+            throw new Error(`上传失败 HTTP ${putRes ? putRes.status : '网络错误'}`);
+        }
+
+        // 4. 将合并结果应用回本地
+        applySyncData(merged);
     }
 
+    // GitHub Gist 同步：PATCH/GET gist，使用 token 鉴权
+    // GitHub API 原生支持 CORS，不需要代理
     async function syncGist(cfg) {
-        const data = exportDataRaw();
         const gistId = cfg.url;
         const token = cfg.user;
-        const filename = cfg.pass || 'multisearch-backup.json';
-        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        const filename = cfg.pass || 'msb-backup.json';
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json'
+        };
+        const apiUrl = `https://api.github.com/gists/${gistId}`;
+
+        // 1. 下载远程数据（首次同步 gist 文件不存在时忽略错误）
+        let remoteData = null;
+        try {
+            const getRes = await fetch(apiUrl, { method: 'GET', headers });
+            if (getRes.ok) {
+                const gist = await getRes.json();
+                const file = gist.files && gist.files[filename];
+                if (file && file.content) {
+                    try { remoteData = JSON.parse(file.content); } catch {}
+                }
+            }
+        } catch {}
+
+        // 2. 合并本地与远程
+        const localData = exportDataRaw();
+        const merged = mergeSyncData(localData, remoteData);
+
+        // 3. 上传合并结果
+        const patchRes = await fetch(apiUrl, {
             method: 'PATCH',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
-                files: { [filename]: { content: JSON.stringify(data, null, 2) } }
+                files: { [filename]: { content: JSON.stringify(merged, null, 2) } }
             })
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!patchRes.ok) {
+            throw new Error(`上传失败 HTTP ${patchRes.status}`);
+        }
+
+        // 4. 将合并结果应用回本地
+        applySyncData(merged);
     }
 
+    // 同步合并策略：
+    //  - 列表字段（bookmarks/history/notes 等）按 id 去重，取 timestamp/addedAt 较新者
+    //  - 字符串/标量数组（bookmarkFolders/searchHistory/rssReadSet）直接并集去重
+    //  - 标量/对象字段：比较双方 lastSync，远程较新则取远程，否则保留本地
+    //  - 加密密码：取较新且非空的一方，避免空值覆盖已有密码
+    //  - 不合并 syncConfig，避免各端本机同步凭据互相覆盖
+    function mergeSyncData(local, remote) {
+        if (!remote || typeof remote !== 'object') {
+            // 远程为空，直接使用本地并打上时间戳
+            return { ...local, lastSync: Date.now() };
+        }
+
+        // 按 id 去重合并的列表字段
+        const idListFields = [
+            'windows', 'bookmarks', 'history', 'notes', 'laterList',
+            'tabs', 'customEngines', 'rssFeeds', 'userScripts'
+        ];
+        // 字符串/标量数组字段：直接并集去重
+        const unionFields = ['bookmarkFolders', 'searchHistory', 'rssReadSet'];
+        // 标量/对象字段：取较新版本
+        const scalarFields = [
+            'engine', 'theme', 'themeColor', 'parallelEngines', 'darkSchedule',
+            'avatar', 'activeTabId', 'scrollProgress', 'llmConfig',
+            'aiSummaryMode', 'translateMode', 'readingSettings', 'pwdAutoLock',
+            'adBlockEnabled', 'translateCache', 'rssCache'
+        ];
+
+        const merged = { ...local };
+
+        // 列表按 id 去重，取 timestamp/addedAt 较新者
+        idListFields.forEach(key => {
+            const localList = Array.isArray(local[key]) ? local[key] : [];
+            const remoteList = Array.isArray(remote[key]) ? remote[key] : [];
+            const map = new Map();
+            const pushItem = (item) => {
+                if (!item || item.id == null) return;
+                const t = item.timestamp || item.addedAt || 0;
+                const exist = map.get(item.id);
+                if (!exist || t >= (exist.timestamp || exist.addedAt || 0)) {
+                    map.set(item.id, item);
+                }
+            };
+            localList.forEach(pushItem);
+            remoteList.forEach(pushItem);
+            merged[key] = Array.from(map.values());
+        });
+
+        // 字符串数组并集去重
+        unionFields.forEach(key => {
+            const localList = Array.isArray(local[key]) ? local[key] : [];
+            const remoteList = Array.isArray(remote[key]) ? remote[key] : [];
+            merged[key] = Array.from(new Set([...localList, ...remoteList]));
+        });
+
+        // 比较 lastSync 决定标量字段方向（远程较新则覆盖本地）
+        const localTs = Number(local.lastSync) || 0;
+        const remoteTs = Number(remote.lastSync) || 0;
+        const remoteNewer = remoteTs > localTs;
+        scalarFields.forEach(key => {
+            if (remoteNewer && remote[key] !== undefined) {
+                merged[key] = remote[key];
+            } else if (local[key] !== undefined) {
+                merged[key] = local[key];
+            }
+        });
+
+        // 加密密码：取较新且非空的一方，避免空远程覆盖本地已有密码
+        const localHasPwd = !!local.encryptedPasswords;
+        const remoteHasPwd = !!remote.encryptedPasswords;
+        if (remoteNewer && remoteHasPwd) {
+            merged.encryptedPasswords = remote.encryptedPasswords;
+            merged.masterPwdHash = remote.masterPwdHash;
+            merged.masterPwdSalt = remote.masterPwdSalt;
+        } else if (localHasPwd) {
+            merged.encryptedPasswords = local.encryptedPasswords;
+            merged.masterPwdHash = local.masterPwdHash;
+            merged.masterPwdSalt = local.masterPwdSalt;
+        }
+
+        merged.exportTime = new Date().toISOString();
+        merged.lastSync = Date.now();
+        return merged;
+    }
+
+    // 将同步合并后的数据写回本地 store 并刷新界面
+    function applySyncData(data) {
+        if (!data) return;
+        if (data.engine) store.setSelectedEngine(data.engine);
+        if (data.windows) store.saveWindows(data.windows);
+        if (data.bookmarks) store.saveBookmarks(data.bookmarks);
+        if (data.bookmarkFolders) save(STORAGE_KEYS.bookmarkFolders, data.bookmarkFolders);
+        if (data.history) store.saveHistory(data.history);
+        if (data.searchHistory) save(STORAGE_KEYS.searchHistory, data.searchHistory);
+        if (data.avatar) store.setAvatar(data.avatar);
+        if (data.theme) { store.setTheme(data.theme); applyTheme(data.theme); }
+        if (data.themeColor) { store.setThemeColor(data.themeColor); applyThemeColor(data.themeColor); }
+        if (data.parallelEngines) store.setParallelEngines(data.parallelEngines);
+        if (data.laterList) save(STORAGE_KEYS.laterList, data.laterList);
+        if (data.notes) save(STORAGE_KEYS.notes, data.notes);
+        if (data.tabs) store.saveTabs(data.tabs);
+        if (data.activeTabId) store.setActiveTabId(data.activeTabId);
+        if (data.scrollProgress) save(STORAGE_KEYS.scrollProgress, data.scrollProgress);
+        if (data.customEngines) save(STORAGE_KEYS.customEngines, data.customEngines);
+        if (data.darkSchedule) { store.setDarkSchedule(data.darkSchedule); applyDarkSchedule(); }
+        if (data.rssFeeds) save(STORAGE_KEYS.rssFeeds, data.rssFeeds);
+        if (data.rssCache) save(STORAGE_KEYS.rssCache, data.rssCache);
+        if (data.rssReadSet) save(STORAGE_KEYS.rssReadSet, data.rssReadSet);
+        if (data.userScripts) store.setUserScripts(data.userScripts);
+        if (data.adBlockEnabled !== undefined) store.setAdBlockEnabled(data.adBlockEnabled);
+        if (data.readingSettings) store.setReadingSettings(data.readingSettings);
+        if (data.pwdAutoLock !== undefined) store.setPwdAutoLock(data.pwdAutoLock);
+        if (data.translateCache) store.setTranslateCache(data.translateCache);
+        if (data.llmConfig) store.setLlmConfig(data.llmConfig);
+        if (data.aiSummaryMode) store.setAiSummaryMode(data.aiSummaryMode);
+        if (data.translateMode) store.setTranslateMode(data.translateMode);
+        // 加密密码相关（已加密，可安全同步）
+        if (data.encryptedPasswords !== undefined) save(STORAGE_KEYS.passwords, data.encryptedPasswords);
+        if (data.masterPwdHash) save(STORAGE_KEYS.masterPwdHash, data.masterPwdHash);
+        if (data.masterPwdSalt) save(STORAGE_KEYS.masterPwdSalt, data.masterPwdSalt);
+        // 注意：不覆盖 syncConfig，避免各端同步凭据互相覆盖
+        renderHome();
+        renderProfile();
+        renderTabs();
+    }
+
+    // 导出全部 v2.0.0 数据（同步用）：书签/历史/笔记/标签/RSS/密码/设置等
     function exportDataRaw() {
+        const syncCfg = store.getSyncConfig() || {};
         return {
-            version: '1.4.0',
+            version: '2.0.0',
             exportTime: new Date().toISOString(),
+            lastSync: Number(syncCfg.lastSync) || 0,
+            // 基础设置
             engine: store.getSelectedEngine(),
-            windows: store.getWindows(),
-            bookmarks: store.getBookmarks(),
-            bookmarkFolders: store.getBookmarkFolders(),
-            history: store.getHistory(),
-            searchHistory: store.getSearchHistory(),
             theme: store.getTheme(),
             themeColor: store.getThemeColor(),
             parallelEngines: store.getParallelEngines(),
-            laterList: store.getLaterList(),
-            notes: store.getNotes(),
-            tabs: store.getTabs(),
-            customEngines: store.getCustomEngines(),
             darkSchedule: store.getDarkSchedule(),
+            avatar: store.getAvatar(),
+            // 多窗口 / 标签页
+            windows: store.getWindows(),
+            tabs: store.getTabs(),
+            activeTabId: store.getActiveTabId(),
+            scrollProgress: load(STORAGE_KEYS.scrollProgress, {}),
+            // 书签
+            bookmarks: store.getBookmarks(),
+            bookmarkFolders: store.getBookmarkFolders(),
+            // 历史
+            history: store.getHistory(),
+            searchHistory: store.getSearchHistory(),
+            // 稍后阅读
+            laterList: store.getLaterList(),
+            // 划线笔记
+            notes: store.getNotes(),
+            // 自定义引擎
+            customEngines: store.getCustomEngines(),
+            // RSS
             rssFeeds: store.getRssFeeds(),
+            rssCache: store.getRssCache(),
+            rssReadSet: load(STORAGE_KEYS.rssReadSet, []),
+            // 密码管理（AES 加密后的密文 + 主密码哈希/盐，可安全同步）
+            encryptedPasswords: store.getEncryptedPasswords(),
+            masterPwdHash: store.getMasterPwdHash(),
+            masterPwdSalt: store.getMasterPwdSalt(),
+            // LLM / AI / 翻译
+            llmConfig: store.getLlmConfig(),
+            aiSummaryMode: store.getAiSummaryMode(),
+            translateMode: store.getTranslateMode(),
+            translateCache: store.getTranslateCache(),
+            // 阅读设置 / 密码自动锁
+            readingSettings: store.getReadingSettings(),
+            pwdAutoLock: store.getPwdAutoLock(),
+            // 用户脚本 / 广告拦截
+            userScripts: store.getUserScripts(),
+            adBlockEnabled: store.getAdBlockEnabled(),
         };
     }
 
@@ -2987,7 +3296,7 @@
 
         $$('[data-action]').forEach(el => {
             if (el.id === 'setting-dark-mode') return;
-            el.onclick = () => {
+            el.onclick = async () => {
                 const action = el.dataset.action;
                 if (action === 'export') exportData();
                 else if (action === 'import') $('#import-file').click();

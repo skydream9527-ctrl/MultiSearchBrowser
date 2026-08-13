@@ -99,7 +99,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// 拦截请求：广告拦截 + 静态资源 cache-first + 跨域 network-first
+// 拦截请求：广告拦截 + 导航 network-first + 同源 stale-while-revalidate + 跨域 network-first + 离线回退页
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     if (req.method !== 'GET') return;
@@ -124,22 +124,49 @@ self.addEventListener('fetch', (event) => {
 
     const sameOrigin = url.origin === self.location.origin;
 
-    if (sameOrigin) {
-        // 同源静态资源：cache-first
+    // 离线回退页：请求失败且无缓存时返回缓存的 index.html
+    const offlineFallback = () => caches.match('./index.html');
+
+    // 导航请求（mode: 'navigate'）：network-first，网络失败时回退缓存
+    if (req.mode === 'navigate') {
         event.respondWith(
-            caches.match(req).then((cached) => {
-                if (cached) return cached;
-                return fetch(req).then((res) => {
-                    if (res.ok && (req.url.includes('.html') || req.url.includes('.css') || req.url.includes('.js') || req.url.includes('.json'))) {
+            fetch(req)
+                .then((res) => {
+                    // 网络成功则缓存并返回最新页面
+                    if (res.ok) {
                         const clone = res.clone();
                         caches.open(CACHE_VERSION).then(c => c.put(req, clone));
                     }
                     return res;
-                }).catch(() => caches.match('./index.html'));
+                })
+                .catch(() => caches.match(req).then(cached => cached || offlineFallback()))
+        );
+        return;
+    }
+
+    if (sameOrigin) {
+        // 同源 GET 请求：stale-while-revalidate（先返回缓存，同时后台更新）
+        event.respondWith(
+            caches.match(req).then((cached) => {
+                // 后台拉取最新版本并更新缓存，失败则忽略
+                const networkUpdate = fetch(req).then((res) => {
+                    if (res.ok) {
+                        const clone = res.clone();
+                        caches.open(CACHE_VERSION).then(c => c.put(req, clone));
+                    }
+                    return res;
+                }).catch(() => null);
+
+                // 有缓存：立即返回缓存，后台同步更新
+                if (cached) {
+                    return cached;
+                }
+                // 无缓存：等待网络结果；网络也失败则回退 index.html
+                return networkUpdate.then(res => res || offlineFallback());
             })
         );
     } else {
-        // 跨域请求：network-first，失败回退 cache
+        // 跨域请求：network-first，失败回退 cache，仍失败则回退 index.html
         event.respondWith(
             fetch(req).then((res) => {
                 if (res.ok) {
@@ -147,7 +174,7 @@ self.addEventListener('fetch', (event) => {
                     caches.open(CACHE_VERSION + '-runtime').then(c => c.put(req, clone));
                 }
                 return res;
-            }).catch(() => caches.match(req))
+            }).catch(() => caches.match(req).then(cached => cached || offlineFallback()))
         );
     }
 });
