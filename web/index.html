@@ -119,7 +119,9 @@
                 <button id="wv-find-close" class="icon-btn">✕</button>
             </div>
             <div class="webview-body">
-                <iframe id="wv-frame" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                <!-- v2.0.0 安全：主 WebView 保留 allow-same-origin 以兼容需 cookie/登录的站点；
+                     并行搜索 iframe（app.js 动态生成）已移除 allow-same-origin -->
+                <iframe id="wv-frame" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
                 <div id="wv-fallback" class="webview-fallback" hidden>
                     <p>🚫 该站点拒绝了内嵌显示（X-Frame-Options / CSP）</p>
                     <p class="muted">这是浏览器安全策略，非本项目 bug。</p>
@@ -470,7 +472,7 @@
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">版本</span>
-                    <span class="setting-value">v1.8.0</span>
+                    <span class="setting-value">v2.0.0</span>
                 </div>
                 <div class="card setting-item static">
                     <span class="setting-label">功能</span>
@@ -582,7 +584,7 @@
     </div>
 
     <!-- LLM API 配置 Modal -->
-    <div id="llm-config-modal" class="modal-overlay" hidden>
+    <div id="llm-config-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="LLM API 配置" hidden>
         <div class="modal-card">
             <h3>🤖 LLM API 配置</h3>
             <div class="setting-item" style="margin:8px 0">

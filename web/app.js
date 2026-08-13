@@ -1,7 +1,29 @@
 /**
  * MultiSearch Browser · Web 版
  * 纯前端实现，localStorage 持久化数据，无后端依赖。
- * v1.5.0：阅读深化 / 标签增强 / 翻译缓存 / 安全加固 / 错误监控 / 工具库抽离
+ * v2.0.0：安全加固 / a11y / safeStorage 复用 / 模块边界索引
+ *
+ * 模块边界索引（v2.0.0 保守拆分策略：保留单 IIFE，按以下边界未来可物理拆分为 ES Module）：
+ *   - utils     L9-294   工具函数 + 常量（已委派 save/load 到 MSBUtils.safeStorage）
+ *   - store     L295-683 数据访问层（localStorage CRUD）
+ *   - theme     L684-706 主题（深色 + 主题色）
+ *   - router    L707-737 路由
+ *   - home      L738-856 首页 + 搜索历史联想
+ *   - webview   L857-1332 WebView + 多标签页 + 字号 + 页内查找
+ *   - reading   L1333-1615 阅读模式 + TTS
+ *   - ai        L1616-2044 AI 摘要 + 划词翻译 + 截图
+ *   - rss       L2045-2198 RSS 订阅
+ *   - passwords L2199-2401 密码管理
+ *   - security  L2402-2530 安全加固 + 错误监控
+ *   - userscript L2531-2770 用户脚本 + 长图/PDF + 笔记导出
+ *   - sync      L2771-2982 跨设备同步 + LLM 配置
+ *   - windows   L2983-3117 多窗口
+ *   - history   L3075-3238 历史 + 书签
+ *   - profile   L3239-3714 我的 + 设置 + 暗黑定时 + 隐身 + 书签 HTML 互通 + 导入导出
+ *   - nav       L3715-3814 底部导航 + AI 多源检索面板
+ *   - parallel  L3815-3975 多引擎并行搜索 + 稍后阅读 + 划线笔记
+ *   - stats     L3976-4431 聚合搜索 + 统计仪表盘 + 热力图 + 语音搜索 + 快捷键
+ *   - init      L4432-    初始化入口
  */
 (function () {
     'use strict';
@@ -246,11 +268,9 @@
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
 
-    const load = (key, def = null) => {
-        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
-        catch { return def; }
-    };
-    const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+    // v2.0.0: 复用 MSBUtils.safeStorage，统一处理 QuotaExceededError 与 JSON 序列化
+    const load = (key, def = null) => U.safeStorage.get(key, def);
+    const save = (key, val) => U.safeStorage.set(key, val);
 
     const formatTime = (ts) => {
         const d = new Date(ts);
@@ -3827,7 +3847,7 @@
                     <span>${engine.name}</span>
                     <span class="toggle">${selected.includes(engine.id) ? '✓' : ''}</span>
                 </div>
-                <iframe data-engine="${engine.id}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+                <iframe data-engine="${engine.id}" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>
             `;
             card.querySelector('.parallel-card-header').onclick = () => {
                 const list = store.getParallelEngines();

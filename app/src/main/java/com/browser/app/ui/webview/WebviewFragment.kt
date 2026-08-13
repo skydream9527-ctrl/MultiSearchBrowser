@@ -125,7 +125,11 @@ class WebviewFragment : Fragment() {
                     // 先移除再注入，避免重复
                     view?.removeJavascriptInterface("MSB")
                     view?.addJavascriptInterface(
-                        WebAppInterface(requireContext(), noteRepository),
+                        WebAppInterface(
+                            requireContext(),
+                            noteRepository,
+                            viewLifecycleOwner.lifecycleScope
+                        ),
                         "MSB"
                     )
                 } else {
