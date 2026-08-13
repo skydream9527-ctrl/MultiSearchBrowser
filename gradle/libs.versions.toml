@@ -22,7 +22,7 @@ junit = "4.13.2"
 espresso = "3.5.1"
 androidJunit = "1.1.5"
 robolectric = "4.11.1"
-coroutinesTest = "1.7.3"
+coroutinesTest = "1.11.0"
 detekt = "1.23.4"
 
 [libraries]
