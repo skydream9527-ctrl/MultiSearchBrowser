@@ -1,8 +1,8 @@
 /**
  * MultiSearch Browser · Service Worker
- * v1.8.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA + i18n
+ * v2.0.0：缓存静态资源 + 离线回退页 + 广告拦截 + PWA + i18n + CSP 配套
  */
-const CACHE_VERSION = 'msb-v1.8.0';
+const CACHE_VERSION = 'msb-v2.0.0';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -10,10 +10,11 @@ const STATIC_ASSETS = [
     './app.js',
     './utils.js',
     './i18n.js',
+    './sw-register.js',
     './manifest.json',
 ];
 
-// v1.6.0: 广告/追踪域名黑名单
+// v2.0.0: 广告/追踪域名黑名单（扩充至 40+）
 const AD_BLACKLIST = [
     'doubleclick.net',
     'googlesyndication.com',
@@ -40,6 +41,27 @@ const AD_BLACKLIST = [
     'cnzz.com',
     'umeng.com',
     'talkingdata.com',
+    // v2.0.0 新增
+    'appsflyer.com',
+    'branch.io',
+    'smartadserver.com',
+    'admob.com',
+    'adsystem.com',
+    'mgid.com',
+    'propellerads.com',
+    'adsterra.com',
+    'popads.net',
+    'popcash.net',
+    'mediavine.com',
+    'mediavine.net',
+    'monetag.com',
+    'adskeeper.com',
+    'mgid.com',
+    'yieldmo.com',
+    'infolinks.com',
+    'chitika.com',
+    'buysellads.com',
+    'carbonads.com',
 ];
 
 // 检查 URL 是否命中黑名单

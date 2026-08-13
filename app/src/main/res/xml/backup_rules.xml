@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.0.0 安全加固：完全禁止备份（旧设备 API < 31 的 fallback） -->
+<full-backup-content>
+    <exclude domain="root" />
+    <exclude domain="database" />
+    <exclude domain="sharedpref" />
+    <exclude domain="external" />
+    <exclude domain="file" />
+</full-backup-content>

@@ -23,9 +23,18 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            // 临时复用 debug 签名以产出可安装的 release APK。
-            // 正式发布请替换为专用 keystore 并通过 CI secrets 注入。
-            signingConfig = signingConfigs.getByName("debug")
+            // v2.0.0 安全加固：优先读取 CI 注入的专用 keystore
+            // 本地未配置时 fallback 到 debug 签名（仅用于调试构建）
+            signingConfig = if (System.getenv("MSB_SIGNING_KEYSTORE") != null) {
+                signingConfigs.create("release") {
+                    storeFile = file(System.getenv("MSB_SIGNING_KEYSTORE")!!)
+                    storePassword = System.getenv("MSB_SIGNING_STORE_PASSWORD") ?: ""
+                    keyAlias = System.getenv("MSB_SIGNING_KEY_ALIAS") ?: ""
+                    keyPassword = System.getenv("MSB_SIGNING_KEY_PASSWORD") ?: ""
+                }
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v2.0.0: 全面禁止明文 HTTP 流量，百度已支持 HTTPS，移除历史例外 -->
 <network-security-config>
-    <!-- 默认拒绝明文 HTTP 流量 -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <!-- 仅对必要的国内老站点放行明文（按需添加） -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">www.baidu.com</domain>
-    </domain-config>
 </network-security-config>

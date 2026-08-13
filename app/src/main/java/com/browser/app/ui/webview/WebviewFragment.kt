@@ -115,19 +115,24 @@ class WebviewFragment : Fragment() {
             }
         }
 
-        // v1.9.0: 注入 JS Bridge，暴露 window.MSB 命名空间
-        binding.webview.addJavascriptInterface(
-            WebAppInterface(requireContext(), noteRepository),
-            "MSB"
-        )
-
-        // v1.9.0: 启用 Cookie 持久化，并接受第三方 Cookie 以兼容登录态
-        CookieManager.getInstance().apply {
-            setAcceptCookie(true)
-            setAcceptThirdPartyCookies(binding.webview, true)
-        }
-
+        // v2.0.0 安全加固：JS Bridge 改为按需注入，仅在白名单 origin 中生效
+        // 通过 WebViewClient.shouldInterceptRequest + onPageStarted 联动控制
         binding.webview.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                // v2.0.0: 仅信任白名单 origin 时注入 JS Bridge
+                if (url != null && isTrustedOrigin(url)) {
+                    // 先移除再注入，避免重复
+                    view?.removeJavascriptInterface("MSB")
+                    view?.addJavascriptInterface(
+                        WebAppInterface(requireContext(), noteRepository),
+                        "MSB"
+                    )
+                } else {
+                    view?.removeJavascriptInterface("MSB")
+                }
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 currentUrl = url ?: ""
@@ -173,6 +178,12 @@ class WebviewFragment : Fragment() {
                     super.onSafeBrowsingHit(view, request, threatType, callback)
                 }
             }
+        }
+
+        // v2.0.0 安全加固：Cookie 默认不接受第三方，仅同源
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            setAcceptThirdPartyCookies(binding.webview, false)
         }
 
         binding.webview.webChromeClient = object : WebChromeClient() {
@@ -315,6 +326,30 @@ class WebviewFragment : Fragment() {
                 requireContext().getColor(com.browser.app.R.color.gray)
             }
         )
+    }
+
+    /**
+     * v2.0.0 安全加固：JS Bridge origin 白名单。
+     * 仅当页面 origin 属于内置信任域（本地/项目托管域）时，才注入 window.MSB。
+     * 其他任意网页一律不注入，防止恶意网站调用 saveNote() 写入本地数据库。
+     */
+    private fun isTrustedOrigin(url: String): Boolean {
+        return try {
+            val u = android.net.Uri.parse(url)
+            val host = u.host ?: return false
+            val scheme = u.scheme ?: return false
+            // 仅信任 https + 白名单域名，或本地 file/about
+            when {
+                scheme == "file" || scheme == "about" -> false // 本地文件不信任
+                scheme != "https" -> false
+                host == "localhost" || host == "127.0.0.1" -> true
+                host.endsWith("multisearchbrowser.github.io") -> true
+                host.endsWith("trae.cn") -> true
+                else -> false
+            }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     override fun onPause() {

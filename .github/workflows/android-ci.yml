@@ -28,14 +28,45 @@ jobs:
     - name: Run unit tests
       run: ./gradlew testDebugUnitTest
 
+    # v2.0.0: lint 真正卡 PR，不再 continue-on-error
     - name: Run lint
       run: ./gradlew lintDebug
-      continue-on-error: true
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
-    - name: Build Release APK
+    # v2.0.0 安全加固：Release 签名改用 GitHub secrets 注入的 keystore
+    # 配置步骤：
+    # 1. 本地生成专用 keystore: keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias msb
+    # 2. base64 编码: base64 -i release.jks -o release.b64
+    # 3. 在 GitHub repo Settings → Secrets → Actions 中添加：
+    #    - SIGNING_KEYSTORE_BASE64  (release.b64 的内容)
+    #    - SIGNING_KEY_ALIAS        (msb)
+    #    - SIGNING_KEY_PASSWORD     (keystore 密码)
+    #    - SIGNING_STORE_PASSWORD   (key 密码)
+    # 4. 未配置 secrets 时自动 fallback 到 debug 签名（保证 CI 不中断）
+    - name: Decode Release Keystore
+      if: github.event_name != 'pull_request' && env.SIGNING_KEYSTORE_BASE64 != ''
+      env:
+        SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      run: |
+        echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > ${{ github.workspace }}/release.jks
+
+    - name: Build Release APK (signed)
+      if: github.event_name != 'pull_request' && env.SIGNING_KEYSTORE_BASE64 != ''
+      env:
+        SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      run: ./gradlew assembleRelease
+      env:
+        MSB_SIGNING_KEYSTORE: ${{ github.workspace }}/release.jks
+        MSB_SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        MSB_SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        MSB_SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+
+    - name: Build Release APK (fallback debug signing)
+      if: github.event_name != 'pull_request' && env.SIGNING_KEYSTORE_BASE64 == ''
+      env:
+        SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
       run: ./gradlew assembleRelease
 
     - name: Upload Debug APK

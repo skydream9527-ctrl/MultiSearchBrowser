@@ -474,7 +474,8 @@
         getMasterPwdSalt: () => load(STORAGE_KEYS.masterPwdSalt, null),
         setMasterPwd: (pwd) => {
             const salt = CryptoJS.lib.WordArray.random(128 / 8).toString();
-            const hash = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 1000 }).toString();
+            // v2.0.0 安全加固：PBKDF2 迭代次数从 1000 提升至 100000，符合 OWASP 2023 最低要求
+            const hash = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 100000 }).toString();
             save(STORAGE_KEYS.masterPwdHash, hash);
             save(STORAGE_KEYS.masterPwdSalt, salt);
         },
@@ -482,19 +483,43 @@
             const hash = store.getMasterPwdHash();
             const salt = store.getMasterPwdSalt();
             if (!hash || !salt) return false;
-            const test = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 1000 }).toString();
+            const test = CryptoJS.PBKDF2(pwd, salt, { keySize: 256 / 32, iterations: 100000 }).toString();
             return test === hash;
         },
         getEncryptedPasswords: () => load(STORAGE_KEYS.passwords, null),
         savePasswords: (list, masterPwd) => {
-            const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(list), masterPwd).toString();
-            save(STORAGE_KEYS.passwords, ciphertext);
+            // v2.0.0 安全加固：用 PBKDF2 派生 256-bit key + 显式 IV，避免 CryptoJS 默认 EvpKDF(MD5) 弱派生
+            const salt = store.getMasterPwdSalt() || CryptoJS.lib.WordArray.random(128 / 8).toString();
+            const key = CryptoJS.PBKDF2(masterPwd, salt, { keySize: 256 / 32, iterations: 100000 });
+            const iv = CryptoJS.lib.WordArray.random(128 / 8);
+            const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(list), key, {
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            }).toString();
+            // 存储格式：base64(iv) || : || ciphertext，解密时拆分
+            const blob = iv.toString(CryptoJS.enc.Base64) + ':' + ciphertext;
+            save(STORAGE_KEYS.passwords, blob);
         },
         loadPasswords: (masterPwd) => {
-            const ciphertext = store.getEncryptedPasswords();
-            if (!ciphertext) return [];
+            const blob = store.getEncryptedPasswords();
+            if (!blob) return [];
             try {
-                const bytes = CryptoJS.AES.decrypt(ciphertext, masterPwd);
+                const parts = blob.split(':');
+                if (parts.length !== 2) {
+                    // 兼容 v1.x 旧格式（直接把密码当 key，EvpKDF 派生）
+                    const bytes = CryptoJS.AES.decrypt(blob, masterPwd);
+                    const text = bytes.toString(CryptoJS.enc.Utf8);
+                    return text ? JSON.parse(text) : [];
+                }
+                const iv = CryptoJS.enc.Base64.parse(parts[0]);
+                const salt = store.getMasterPwdSalt();
+                const key = CryptoJS.PBKDF2(masterPwd, salt, { keySize: 256 / 32, iterations: 100000 });
+                const bytes = CryptoJS.AES.decrypt(parts[1], key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
                 const text = bytes.toString(CryptoJS.enc.Utf8);
                 return text ? JSON.parse(text) : [];
             } catch { return null; } // 密码错误

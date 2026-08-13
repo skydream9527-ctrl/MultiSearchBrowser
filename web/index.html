@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2196F3">
     <title>MultiSearch Browser · Web 版</title>
+    <!-- v2.0.0 安全加固：CSP 限制脚本/样式/连接来源，阻止内联脚本与 XSS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src * data: https:; connect-src * https: http:; font-src 'self' data:; frame-src * https: http:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -605,8 +607,12 @@
     <!-- Toast -->
     <div id="toast" class="toast" hidden></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.js"
+            integrity="sha384-57VRFGvLpSky5EqUImBJSOkJI+6xYMONZqn8Zh70E+1DyMPpN1vQkaJaN4YqRmln"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+            integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+            crossorigin="anonymous"></script>
     <script src="utils.js"></script>
     <script src="i18n.js"></script>
     <!-- ============ v1.5.0: 标签页右键菜单 ============ -->
@@ -620,12 +626,6 @@
         <button data-action="close" class="danger">关闭此标签</button>
     </div>
     <script src="app.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
-            });
-        }
-    </script>
+    <script src="sw-register.js"></script>
 </body>
 </html>
