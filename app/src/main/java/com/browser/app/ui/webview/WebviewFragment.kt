@@ -112,6 +112,21 @@ class WebviewFragment : Fragment() {
             loadUrl(url)
         }
         observeBookmarkState()
+        // v2.1.0: 启动 Room → Web 数据推送（C2），Android 端原生变更后通知 Web 刷新
+        startWebviewDataBridge()
+    }
+
+    /**
+     * v2.1.0: 订阅 Repository Flow，数据变化时通过 evaluateJavascript 通知 Web 端刷新。
+     * 协程作用域用 viewLifecycleOwner.lifecycleScope，Fragment 销毁自动取消。
+     */
+    private fun startWebviewDataBridge() {
+        val bridge = WebviewDataBridge(binding.webview, viewLifecycleOwner.lifecycleScope)
+        bridge.start(
+            bookmarkRepository.getAllBookmarks(),
+            historyRepository.getAllHistory(),
+            noteRepository.getAllNotes(),
+        )
     }
 
     private fun setupBackCallback() {
