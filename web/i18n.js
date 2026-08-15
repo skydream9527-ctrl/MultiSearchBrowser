@@ -2,7 +2,7 @@
  * 支持中文（zh-CN）和英文（en）两种语言
  * 用法：i18n.t('key') 或 data-i18n="key" 自动渲染
  */
-(function (global) {
+(function(global) {
     'use strict';
 
     const messages = {

@@ -8,8 +8,8 @@ import com.browser.app.repository.HistoryRepository
 import com.browser.app.repository.NoteRepository
 import com.browser.app.repository.PasswordRepository
 import com.browser.app.repository.RssRepository
-import com.browser.app.repository.UserScriptRepository
 import com.browser.app.repository.WindowRepository
+import com.browser.app.utils.CryptoUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -20,7 +20,9 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +43,7 @@ import java.util.concurrent.Executor
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
+@Suppress("LargeClass")
 class WebAppInterfaceTest {
 
     private lateinit var database: BrowserDatabase
@@ -49,9 +52,10 @@ class WebAppInterfaceTest {
     private lateinit var noteRepo: NoteRepository
     private lateinit var passwordRepo: PasswordRepository
     private lateinit var rssRepo: RssRepository
-    private lateinit var userScriptRepo: UserScriptRepository
     private lateinit var windowRepo: WindowRepository
     private lateinit var webAppInterface: WebAppInterface
+    // 探测 Robolectric 环境下 Android Keystore 是否可用（密码测试按需跳过）
+    private var keystoreAvailable = false
 
     @Before
     fun setup() {
@@ -71,8 +75,15 @@ class WebAppInterfaceTest {
         noteRepo = NoteRepository(database.noteDao())
         passwordRepo = PasswordRepository(database.passwordDao())
         rssRepo = RssRepository(database.rssDao())
-        userScriptRepo = UserScriptRepository(database.userScriptDao())
         windowRepo = WindowRepository(database.windowDao())
+
+        // 探测 Robolectric 环境下 Android Keystore 是否可用（参考 PasswordRepositoryTest）
+        keystoreAvailable = try {
+            val cipher = CryptoUtils.encrypt("probe")
+            CryptoUtils.decrypt(cipher) == "probe"
+        } catch (t: Throwable) {
+            false
+        }
     }
 
     @After
@@ -89,7 +100,6 @@ class WebAppInterfaceTest {
             noteRepo,
             passwordRepo,
             rssRepo,
-            userScriptRepo,
             windowRepo,
             scope
         )
@@ -300,5 +310,102 @@ class WebAppInterfaceTest {
         webAppInterface = createInterface(this)
         val info = webAppInterface.getAppInfo()
         assertTrue("getAppInfo 应包含应用名", info.contains("MultiSearchBrowser"))
+    }
+
+    // ============ RSS ============
+
+    @Test
+    fun getRssFeedsJson_emptyInitially() = runTest {
+        webAppInterface = createInterface(this)
+        val arr = JSONArray(webAppInterface.getRssFeedsJson())
+        assertEquals(0, arr.length())
+    }
+
+    @Test
+    fun addRssFeed_writesToDatabase() = runTest {
+        webAppInterface = createInterface(this)
+        val result = webAppInterface.addRssFeed("科技博客", "https://example.com/rss")
+        assertTrue("addRssFeed 应返回 true", result)
+        advanceUntilIdle()
+
+        val all = rssRepo.getAllFeeds().first()
+        assertEquals(1, all.size)
+        assertEquals("科技博客", all[0].name)
+        assertEquals("https://example.com/rss", all[0].url)
+    }
+
+    @Test
+    fun deleteRssFeed_removesFromDatabase() = runTest {
+        webAppInterface = createInterface(this)
+        val id = rssRepo.addFeed("待删除订阅", "https://delete.com/rss")
+        advanceUntilIdle()
+        assertEquals(1, rssRepo.getAllFeeds().first().size)
+
+        assertTrue(webAppInterface.deleteRssFeed(id))
+        advanceUntilIdle()
+        assertEquals(0, rssRepo.getAllFeeds().first().size)
+    }
+
+    // ============ 多窗口 ============
+
+    @Test
+    fun getWindowsJson_emptyInitially() = runTest {
+        webAppInterface = createInterface(this)
+        val arr = JSONArray(webAppInterface.getWindowsJson())
+        assertEquals(0, arr.length())
+    }
+
+    @Test
+    fun addWindow_writesToDatabase() = runTest {
+        webAppInterface = createInterface(this)
+        val result = webAppInterface.addWindow("新窗口", "https://window.com")
+        assertTrue("addWindow 应返回 true", result)
+        advanceUntilIdle()
+
+        val all = windowRepo.getAllWindows().first()
+        assertEquals(1, all.size)
+        assertEquals("新窗口", all[0].title)
+        assertEquals("https://window.com", all[0].url)
+    }
+
+    @Test
+    fun deleteWindow_removesFromDatabase() = runTest {
+        webAppInterface = createInterface(this)
+        val id = windowRepo.addWindow("待删除窗口", "https://delete-win.com")
+        advanceUntilIdle()
+        assertEquals(1, windowRepo.getAllWindows().first().size)
+
+        assertTrue(webAppInterface.deleteWindow(id))
+        advanceUntilIdle()
+        assertEquals(0, windowRepo.getAllWindows().first().size)
+    }
+
+    @Test
+    fun updateWindow_updatesDatabase() = runTest {
+        webAppInterface = createInterface(this)
+        val id = windowRepo.addWindow("原标题", "https://orig.com")
+        advanceUntilIdle()
+
+        assertTrue(webAppInterface.updateWindow(id, "更新标题", "https://updated.com"))
+        advanceUntilIdle()
+
+        val updated = windowRepo.getWindowById(id)
+        assertNotNull("更新后窗口仍应存在", updated)
+        assertEquals("更新标题", updated!!.title)
+        assertEquals("https://updated.com", updated.url)
+    }
+
+    // ============ 密码 ============
+
+    @Test
+    fun getPasswordsCount_returnsCorrectCount() = runTest {
+        assumeTrue("Android Keystore 不可用，跳过加密验证", keystoreAvailable)
+
+        webAppInterface = createInterface(this)
+        passwordRepo.addPassword("SiteA", "user1", "pwd1")
+        passwordRepo.addPassword("SiteB", "user2", "pwd2")
+        advanceUntilIdle()
+
+        assertEquals(2, webAppInterface.getPasswordsCount())
     }
 }

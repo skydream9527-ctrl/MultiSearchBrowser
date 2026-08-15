@@ -25,7 +25,7 @@
  *   - stats     L3976-4431 聚合搜索 + 统计仪表盘 + 热力图 + 语音搜索 + 快捷键
  *   - init      L4432-    初始化入口
  */
-(function () {
+(function() {
     'use strict';
 
     // ============ 工具库别名（v1.5.0 起逐步委派到 window.MSBUtils） ============
@@ -324,7 +324,7 @@
     // ============ 路由 ============
     const routes = ['home', 'parallel', 'aggregated', 'windows', 'webview', 'profile', 'history', 'bookmarks', 'later', 'notes', 'rss', 'passwords', 'stats', 'settings'];
     let currentRoute = 'home';
-    let routeStack = ['home'];
+    const routeStack = ['home'];
 
     function navigate(route, push = true) {
         if (!routes.includes(route)) return;
@@ -490,7 +490,7 @@
     function openWebview(url, windowId = -1) {
         // 取或建活跃 tab
         let tabId = store.getActiveTabId();
-        let tabs = store.getTabs();
+        const tabs = store.getTabs();
         const existing = tabs.find(t => t.id === tabId);
         if (!existing) {
             const tab = store.addTab(url, '');
@@ -1574,8 +1574,8 @@
             svg += `<text x="${item.x}" y="${item.y}" font-size="${item.fontSize}" fill="${item.color}"
                 text-anchor="middle" dominant-baseline="middle"
                 class="kw-cloud-item"
-                data-word="${escapeAttr(item.word)}"
-                onclick="window.__msbCloudClick && window.__msbCloudClick('${escapeAttr(item.word)}')">${escapeHtml(item.word)}</text>`;
+                data-word="${MSBUtils.escapeAttr(item.word)}"
+                onclick="window.__msbCloudClick && window.__msbCloudClick('${MSBUtils.escapeAttr(item.word)}')">${escapeHtml(item.word)}</text>`;
         });
         svg += '</svg>';
         // 暴露点击回调
@@ -1791,7 +1791,7 @@
         $('#rss-filter').addEventListener('input', (e) => {
             renderRss(e.target.value.trim());
         });
-        $('#rss-add-btn').onclick = async () => {
+        $('#rss-add-btn').onclick = async() => {
             const name = await inputDialog('订阅源名称', '');
             if (!name) return;
             const url = await inputDialog('RSS URL', '');
@@ -1931,7 +1931,7 @@
                 e.stopPropagation();
                 editPassword(p);
             };
-            card.querySelector('[data-act="del"]').onclick = async (e) => {
+            card.querySelector('[data-act="del"]').onclick = async(e) => {
                 e.stopPropagation();
                 const ok = await confirmDialog('删除密码', `确定要删除「${p.site}」的密码吗？`);
                 if (ok) {
@@ -1981,7 +1981,7 @@
         // 临时改造 modal 为多字段
         const inputEl = $('#pwd-unlock-input');
         // 用 prompt 链式输入更简单
-        (async () => {
+        (async() => {
             // 为各输入字段设置合适的 autocomplete，让浏览器/系统提供自动填充建议
             const newSite = await inputDialog('站点名', site, 'off');
             if (newSite === null) return;
@@ -2282,7 +2282,7 @@
                 btn.onclick = () => editUserScript(Number(btn.dataset.id), renderScriptList);
             });
             list.querySelectorAll('[data-act="del"]').forEach(btn => {
-                btn.onclick = async () => {
+                btn.onclick = async() => {
                     if (await confirmDialog('删除脚本', '确定删除此用户脚本吗？')) {
                         store.deleteUserScript(Number(btn.dataset.id));
                         renderScriptList();
@@ -2902,7 +2902,7 @@
                 <button class="lic-btn danger" data-act="close" aria-label="关闭">✕</button>
             `;
             card.querySelector('.lic-body').onclick = () => openWebview(win.url, win.id);
-            card.querySelector('[data-act="rename"]').onclick = async (e) => {
+            card.querySelector('[data-act="rename"]').onclick = async(e) => {
                 e.stopPropagation();
                 const newTitle = await inputDialog('重命名窗口', win.title || '');
                 if (newTitle !== null && newTitle !== win.title) {
@@ -2986,7 +2986,7 @@
                 </div>
             `;
             card.onclick = () => openWebview(h.url, -1);
-            card.oncontextmenu = async (e) => {
+            card.oncontextmenu = async(e) => {
                 e.preventDefault();
                 const ok = await confirmDialog('删除记录', '确定要删除这条记录吗？');
                 if (ok) { store.deleteHistory(h.id); renderHistory(filter); }
@@ -2996,7 +2996,7 @@
     }
 
     function setupHistoryPage() {
-        $('#clear-history-btn').onclick = async () => {
+        $('#clear-history-btn').onclick = async() => {
             const ok = await confirmDialog('清空历史', '确定要清空所有浏览历史吗？此操作不可撤销。');
             if (ok) { store.clearHistory(); renderHistory(); showToast('已清空历史'); }
         };
@@ -3059,7 +3059,7 @@
             delBtn.className = 'lic-btn danger';
             delBtn.textContent = '✕';
             delBtn.style.marginLeft = '8px';
-            delBtn.onclick = async (e) => {
+            delBtn.onclick = async(e) => {
                 e.stopPropagation();
                 const ok = await confirmDialog('删除文件夹', `删除文件夹「${folder}」？内部书签将移到未分类。`);
                 if (ok) {
@@ -3090,7 +3090,7 @@
             <button class="lic-btn danger" data-act="del" aria-label="删除">✕</button>
         `;
         card.querySelector('.lic-body').onclick = () => openWebview(b.url, -1);
-        card.querySelector('[data-act="move"]').onclick = async (e) => {
+        card.querySelector('[data-act="move"]').onclick = async(e) => {
             e.stopPropagation();
             const folders = store.getBookmarkFolders();
             const options = ['未分类', ...folders];
@@ -3105,7 +3105,7 @@
             renderBookmarks(filter);
             showToast('已移动');
         };
-        card.querySelector('[data-act="del"]').onclick = async (e) => {
+        card.querySelector('[data-act="del"]').onclick = async(e) => {
             e.stopPropagation();
             const ok = await confirmDialog('删除收藏', '确定要删除这个收藏吗？');
             if (ok) { store.deleteBookmark(b.url); renderBookmarks(filter); }
@@ -3117,7 +3117,7 @@
         $('#bookmarks-filter').addEventListener('input', (e) => {
             renderBookmarks(e.target.value.trim());
         });
-        $('#add-folder-btn').onclick = async () => {
+        $('#add-folder-btn').onclick = async() => {
             const name = await inputDialog('新建书签文件夹', '');
             if (!name) return;
             store.addBookmarkFolder(name);
@@ -3228,7 +3228,7 @@
                 </div>
                 <span class="ce-del" data-id="${e.id}">✕</span>
             `;
-            item.querySelector('.ce-del').onclick = async (ev) => {
+            item.querySelector('.ce-del').onclick = async(ev) => {
                 ev.stopPropagation();
                 const ok = await confirmDialog('删除引擎', `确定要删除自定义引擎「${e.name}」吗？`);
                 if (ok) {
@@ -3263,7 +3263,7 @@
             applyDarkSchedule();
             showToast('暗黑定时已更新');
         });
-        $('#add-engine-btn').onclick = async () => {
+        $('#add-engine-btn').onclick = async() => {
             const name = await inputDialog('引擎名称（如：知乎）', '');
             if (!name) return;
             const searchUrl = await inputDialog('搜索 URL 模板（关键词用 {q} 占位）', 'https://www.zhihu.com/search?q={q}');
@@ -3296,7 +3296,7 @@
 
         $$('[data-action]').forEach(el => {
             if (el.id === 'setting-dark-mode') return;
-            el.onclick = async () => {
+            el.onclick = async() => {
                 const action = el.dataset.action;
                 if (action === 'export') exportData();
                 else if (action === 'import') $('#import-file').click();
@@ -3853,7 +3853,7 @@
         $('#notes-filter').addEventListener('input', (e) => {
             renderNotes(e.target.value.trim());
         });
-        $('#clear-notes-btn').onclick = async () => {
+        $('#clear-notes-btn').onclick = async() => {
             const ok = await confirmDialog('清空笔记', '确定要清空所有笔记吗？此操作不可撤销。');
             if (ok) {
                 store.clearNotes();
@@ -3903,7 +3903,7 @@
                 card.style.display = (!filter || text.includes(filter)) ? '' : 'none';
             });
         });
-        $('#parallel-aggregate-btn').onclick = async () => {
+        $('#parallel-aggregate-btn').onclick = async() => {
             const q = $('#parallel-input').value.trim();
             if (!q) { showToast('请输入关键词'); return; }
             await runAggregatedSearch(q);
@@ -3917,7 +3917,7 @@
         store.addSearchHistory(query);
         const allEngines = getAllEngines();
         const all = [];
-        const tasks = selected.map(async (id) => {
+        const tasks = selected.map(async(id) => {
             const engine = allEngines.find(e => e.id === id);
             if (!engine) return;
             const results = await fetchEngineResults(engine, query);
@@ -3957,7 +3957,7 @@
             ];
             const seen = new Set();
             doc.querySelectorAll('a').forEach(a => {
-                let href = a.getAttribute('href') || '';
+                const href = a.getAttribute('href') || '';
                 // 百度跳转
                 if (href.startsWith('http://www.baidu.com/link') || href.includes('baidu.com/link')) {
                     // 无法解码，跳过

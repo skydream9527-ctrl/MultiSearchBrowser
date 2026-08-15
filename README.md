@@ -9,7 +9,7 @@
 ![Hilt](https://img.shields.io/badge/Hilt-2.48.1-24B6EF?style=flat-square)
 ![Room](https://img.shields.io/badge/Room-2.6.1-6DB33F?style=flat-square)
 ![PWA](https://img.shields.io/badge/Web-PWA-5A0FC8?style=flat-square)
-![Version](https://img.shields.io/badge/version-2.0.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.0-blue?style=flat-square)
 
 ---
 
@@ -78,6 +78,34 @@
 | PWA | manifest.json + Service Worker |
 | i18n | 自研 i18n.js（zh-CN / en） |
 | CDN | jsdelivr（SRI 校验） |
+
+## 🧪 测试
+
+### Android 单元测试（8 个文件 / 63 用例）
+
+| 层 | 测试文件 | 用例数 |
+|---|---|---|
+| DAO | `BookmarkDaoTest.kt` / `HistoryDaoTest.kt`（Robolectric 内存数据库） | 11 |
+| Repository | `RssRepositoryTest.kt` / `NoteRepositoryTest.kt` / `PasswordRepositoryTest.kt` | 25 |
+| ViewModel | `StatsViewModelTest.kt` | 5 |
+| Bridge | `WebAppInterfaceTest.kt` | 18 |
+| Utils | `SearchEngineTest.kt` | 4 |
+
+### Web 单元测试（1 个文件 / 22 用例）
+
+| 测试文件 | 说明 |
+|---|---|
+| `web/test/utils.test.js` | Node.js 内置 test runner，覆盖 MSBUtils 纯函数（HTML 转义 / 域名提取 / URL 校验 / 截断 / 时间格式化 / 密码强度 / safeStorage 往返 / 唯一 ID / 防抖） |
+
+运行方式：
+
+```bash
+# Android
+./gradlew testDebugUnitTest
+
+# Web（在 web/ 目录下）
+node --test test/utils.test.js
+```
 
 ## 🚀 构建
 

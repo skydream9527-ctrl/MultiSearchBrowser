@@ -7,7 +7,6 @@ import com.browser.app.repository.HistoryRepository
 import com.browser.app.repository.NoteRepository
 import com.browser.app.repository.PasswordRepository
 import com.browser.app.repository.RssRepository
-import com.browser.app.repository.UserScriptRepository
 import com.browser.app.repository.WindowRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
@@ -37,7 +36,6 @@ class WebAppInterface(
     private val noteRepository: NoteRepository,
     private val passwordRepository: PasswordRepository,
     private val rssRepository: RssRepository,
-    private val userScriptRepository: UserScriptRepository,
     private val windowRepository: WindowRepository,
     private val coroutineScope: CoroutineScope,
 ) {
@@ -171,6 +169,128 @@ class WebAppInterface(
             put("history", history)
             put("notes", notes)
         }.toString()
+    }
+
+    // ============ RSS ============
+
+    /** 返回 RSS 订阅源 JSON 数组字符串：MSB.getRssFeedsJson() */
+    @JavascriptInterface
+    fun getRssFeedsJson(): String = runBlocking {
+        val list = rssRepository.getAllFeeds().first()
+        val arr = JSONArray()
+        for (f in list) {
+            arr.put(JSONObject().apply {
+                put("id", f.id)
+                put("name", f.name)
+                put("url", f.url)
+                // Web 端字段为 addedAt，Android 表无此字段，用 lastFetched 近似映射
+                put("addedAt", f.lastFetched)
+            })
+        }
+        arr.toString()
+    }
+
+    /** 返回最近 50 条未读 RSS 条目 JSON 数组字符串：MSB.getRssItemsJson() */
+    @JavascriptInterface
+    fun getRssItemsJson(): String = runBlocking {
+        val list = rssRepository.getAllItems().first()
+            .filter { !it.isRead }
+            .take(50)
+        val arr = JSONArray()
+        for (item in list) {
+            arr.put(JSONObject().apply {
+                put("id", item.id)
+                put("feedId", item.feedId)
+                put("guid", item.guid)
+                put("title", item.title)
+                put("link", item.link)
+                put("description", item.description)
+                put("pubDate", item.pubDate)
+                put("source", item.source)
+            })
+        }
+        arr.toString()
+    }
+
+    /** 返回 RSS 未读条目数：MSB.getUnreadCount() */
+    @JavascriptInterface
+    fun getUnreadCount(): Int = runBlocking {
+        rssRepository.getUnreadCount().first()
+    }
+
+    /** 新增 RSS 订阅源（异步落库，立即返回 true）：MSB.addRssFeed(name, url) */
+    @JavascriptInterface
+    fun addRssFeed(name: String, url: String): Boolean {
+        if (url.isBlank()) return false
+        coroutineScope.launch {
+            rssRepository.addFeed(name, url)
+        }
+        return true
+    }
+
+    /** 删除 RSS 订阅源（异步落库，立即返回 true）：MSB.deleteRssFeed(id) */
+    @JavascriptInterface
+    fun deleteRssFeed(id: Long): Boolean {
+        coroutineScope.launch {
+            rssRepository.deleteFeedById(id)
+        }
+        return true
+    }
+
+    // ============ 多窗口 ============
+
+    /** 返回多窗口 JSON 数组字符串：MSB.getWindowsJson() */
+    @JavascriptInterface
+    fun getWindowsJson(): String = runBlocking {
+        val list = windowRepository.getAllWindows().first()
+        val arr = JSONArray()
+        for (w in list) {
+            arr.put(JSONObject().apply {
+                put("id", w.id)
+                put("title", w.title)
+                put("url", w.url)
+                put("timestamp", w.timestamp)
+            })
+        }
+        arr.toString()
+    }
+
+    /** 新增多窗口（异步落库，立即返回 true）：MSB.addWindow(title, url) */
+    @JavascriptInterface
+    fun addWindow(title: String, url: String): Boolean {
+        if (url.isBlank()) return false
+        coroutineScope.launch {
+            windowRepository.addWindow(title, url)
+        }
+        return true
+    }
+
+    /** 删除多窗口（异步落库，立即返回 true）：MSB.deleteWindow(id) */
+    @JavascriptInterface
+    fun deleteWindow(id: Long): Boolean {
+        coroutineScope.launch {
+            windowRepository.deleteWindowById(id)
+        }
+        return true
+    }
+
+    /** 更新多窗口（异步落库，立即返回 true）：MSB.updateWindow(id, title, url)
+     *  需先取出 Entity 再 copy 更新字段，复用 windowRepository.updateWindow */
+    @JavascriptInterface
+    fun updateWindow(id: Long, title: String, url: String): Boolean {
+        coroutineScope.launch {
+            val existing = windowRepository.getWindowById(id) ?: return@launch
+            windowRepository.updateWindow(existing.copy(title = title, url = url))
+        }
+        return true
+    }
+
+    // ============ 密码 ============
+
+    /** 返回密码数量（不返回明文，安全考虑）：MSB.getPasswordsCount() */
+    @JavascriptInterface
+    fun getPasswordsCount(): Int = runBlocking {
+        passwordRepository.getAllPasswords().first().size
     }
 
     // ============ 兼容方法 ============

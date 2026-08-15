@@ -180,7 +180,6 @@ class WebviewFragment : Fragment() {
                             noteRepository,
                             passwordRepository,
                             rssRepository,
-                            userScriptRepository,
                             windowRepository,
                             viewLifecycleOwner.lifecycleScope
                         ),

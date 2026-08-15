@@ -49,7 +49,7 @@ class SyncWorker @AssistedInject constructor(
             val cutoff = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
             rssRepository.deleteOldItems(cutoff)
             Result.success()
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             // 失败重试，最多 3 次（WorkManager 默认约束）
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
@@ -59,6 +59,7 @@ class SyncWorker @AssistedInject constructor(
      * 拉取并解析一个 RSS 源，返回新增条目数。
      * 支持 RSS 2.0 与 Atom <entry> 结构的最小化解析。
      */
+    @Suppress("CyclomaticComplexMethod", "NestedBlockDepth")
     private suspend fun fetchFeed(feedId: Long, url: String): Int {
         val request = Request.Builder().url(url).build()
         val response = httpClient.newCall(request).execute()

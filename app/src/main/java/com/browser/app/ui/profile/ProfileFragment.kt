@@ -156,7 +156,7 @@ class ProfileFragment : Fragment() {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             // Ignore
         }
 

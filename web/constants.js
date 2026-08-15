@@ -3,7 +3,7 @@
  * v2.1.0: 从 app.js 抽离，所有模块共享。
  * 依赖：无（纯数据）
  */
-(function () {
+(function() {
     'use strict';
 
     // 7 个内置搜索引擎

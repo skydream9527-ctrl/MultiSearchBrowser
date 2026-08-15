@@ -16,3 +16,11 @@ local.properties
 *.log
 *.keystore
 !debug.keystore
+
+# v2.1.0: Android build 输出 + Web node_modules
+/app/build
+/web/node_modules
+/web/package-lock.json
+
+# v2.1.0: Room schema 导出
+/app/schemas

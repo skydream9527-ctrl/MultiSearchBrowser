@@ -3,7 +3,7 @@
  * app.js 中的 IIFE 工具函数优先委派到 window.MSBUtils。
  * 未来若改造为 ES Module，本文件可作为首个抽离的模块。
  */
-(function (global) {
+(function(global) {
     'use strict';
 
     const MSBUtils = {};
@@ -81,7 +81,7 @@
 
     MSBUtils.debounce = (fn, wait = 200) => {
         let timer = null;
-        return function (...args) {
+        return function(...args) {
             clearTimeout(timer);
             timer = setTimeout(() => fn.apply(this, args), wait);
         };
@@ -89,7 +89,7 @@
 
     MSBUtils.throttle = (fn, wait = 200) => {
         let last = 0;
-        return function (...args) {
+        return function(...args) {
             const now = Date.now();
             if (now - last >= wait) {
                 last = now;
@@ -104,7 +104,7 @@
     };
 
     // ============ 复制到剪贴板 ============
-    MSBUtils.copyToClipboard = async (text) => {
+    MSBUtils.copyToClipboard = async(text) => {
         try {
             await navigator.clipboard.writeText(text);
             return true;

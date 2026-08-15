@@ -3,7 +3,7 @@
  * v2.1.0: 从 app.js 抽离，封装所有 localStorage CRUD 操作。
  * 依赖：MSBUtils.safeStorage / MSBConstants.STORAGE_KEYS / CryptoJS
  */
-(function () {
+(function() {
     'use strict';
 
     const K = window.MSBConstants.STORAGE_KEYS;
@@ -11,7 +11,10 @@
 
     // v2.1.0: 检测 Android WebView JS Bridge（window.MSB）是否可用
     // native 模式下读优先走 Bridge（Room 数据库），写双写（Bridge + localStorage）
-    const isNativeBridge = typeof window.MSB !== 'undefined' && typeof window.MSB.getBookmarksJson === 'function';
+    // v2.1.1: 扩展检测条件，RSS 方法存在才算 native（避免旧版 Bridge 误判）
+    const isNativeBridge = typeof window.MSB !== 'undefined'
+        && typeof window.MSB.getBookmarksJson === 'function'
+        && typeof window.MSB.getRssFeedsJson === 'function';
 
     /**
      * 安全调用 Bridge 读取方法并解析 JSON，失败时返回 null（由调用方降级 localStorage）。
@@ -35,13 +38,22 @@
         setSelectedEngine: (id) => storage.set(K.engine, id),
 
         // ============ 多窗口 ============
-        getWindows: () => storage.get(K.windows, []),
+        // v2.1.1: native 模式下读优先走 Bridge（Room），失败降级 localStorage
+        getWindows: () => {
+            if (isNativeBridge) {
+                const bridge = readBridgeJson('getWindowsJson');
+                if (bridge !== null) return bridge;
+            }
+            return storage.get(K.windows, []);
+        },
         saveWindows: (list) => storage.set(K.windows, list),
+        // v2.1.1: native 模式下双写（Bridge + localStorage）
         addWindow: (title, url) => {
             const list = store.getWindows();
             const win = { id: Date.now(), title, url, timestamp: Date.now() };
             list.unshift(win);
             store.saveWindows(list);
+            if (isNativeBridge) { try { window.MSB.addWindow(title, url); } catch {} }
             return win;
         },
         updateWindow: (id, patch) => {
@@ -50,7 +62,11 @@
             if (idx >= 0) { list[idx] = { ...list[idx], ...patch, timestamp: Date.now() }; store.saveWindows(list); }
         },
         reorderWindows: (newList) => storage.set(K.windows, newList),
-        deleteWindow: (id) => store.saveWindows(store.getWindows().filter(w => w.id !== id)),
+        // v2.1.1: native 模式下双写（Bridge + localStorage）
+        deleteWindow: (id) => {
+            store.saveWindows(store.getWindows().filter(w => w.id !== id));
+            if (isNativeBridge) { try { window.MSB.deleteWindow(id); } catch {} }
+        },
 
         // ============ 书签 ============
         // v2.1.0: native 模式下读优先走 Bridge（Room），失败降级 localStorage
@@ -217,15 +233,28 @@
         setDarkSchedule: (mode) => storage.set(K.darkSchedule, mode),
 
         // ============ v1.4.0: RSS ============
-        getRssFeeds: () => storage.get(K.rssFeeds, []),
+        // v2.1.1: native 模式下读优先走 Bridge（Room），失败降级 localStorage
+        getRssFeeds: () => {
+            if (isNativeBridge) {
+                const bridge = readBridgeJson('getRssFeedsJson');
+                if (bridge !== null) return bridge;
+            }
+            return storage.get(K.rssFeeds, []);
+        },
+        // v2.1.1: native 模式下双写（Bridge + localStorage）
         addRssFeed: (name, url) => {
             const list = store.getRssFeeds();
             const feed = { id: Date.now(), name, url, addedAt: Date.now() };
             list.push(feed);
             storage.set(K.rssFeeds, list);
+            if (isNativeBridge) { try { window.MSB.addRssFeed(name, url); } catch {} }
             return feed;
         },
-        deleteRssFeed: (id) => storage.set(K.rssFeeds, store.getRssFeeds().filter(f => f.id !== id)),
+        // v2.1.1: native 模式下双写（Bridge + localStorage）
+        deleteRssFeed: (id) => {
+            storage.set(K.rssFeeds, store.getRssFeeds().filter(f => f.id !== id));
+            if (isNativeBridge) { try { window.MSB.deleteRssFeed(id); } catch {} }
+        },
         getRssCache: () => storage.get(K.rssCache, []),
         setRssCache: (items) => storage.set(K.rssCache, items),
 

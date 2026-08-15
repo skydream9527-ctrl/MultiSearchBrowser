@@ -7,8 +7,11 @@
   "globals": {
     "MSBUtils": "readonly",
     "MSBi18n": "readonly",
+    "MSBConstants": "readonly",
+    "MSBStore": "readonly",
     "CryptoJS": "readonly",
-    "html2canvas": "readonly"
+    "html2canvas": "readonly",
+    "PasswordCredential": "readonly"
   },
   "parserOptions": {
     "ecmaVersion": 2021,

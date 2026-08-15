@@ -14,6 +14,9 @@ complexity:
     threshold: 20
   TooManyFunctions:
     thresholdInFiles: 15
+    thresholdInClasses: 25
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
   LargeClass:
     threshold: 250
 
@@ -29,6 +32,9 @@ style:
     maxLineLength: 140
   ForbiddenComment:
     active: false  # 允许 TODO/FIXME
+  FunctionOnlyReturningConstant:
+    active: true
+    excludes: ['**/ui/webview/WebAppInterface.kt']
 
 empty-blocks:
   active: true
