@@ -10,6 +10,8 @@ const STATIC_ASSETS = [
     './app.js',
     './constants.js',
     './app-store.js',
+    './app-ai.js',
+    './app-sync.js',
     './utils.js',
     './i18n.js',
     './sw-register.js',
