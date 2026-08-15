@@ -62,8 +62,8 @@ class BookmarkDaoTest {
             url = "https://delete.me",
             timestamp = System.currentTimeMillis()
         )
-        val id = dao.insert(bookmark)
-        dao.deleteById(id)
+        dao.insert(bookmark)
+        dao.deleteByUrl("https://delete.me")
 
         val all = dao.getAllBookmarks().first()
         assertTrue(all.isEmpty())

@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/primary"/>
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
-</adaptive-icon>
+<!-- v2.1.0: minSdk 24 兼容，非 v26 设备用普通 vector drawable 作为 launcher icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M0,0h108v108h-108z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0"/>
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M54,35c-10.5,0 -19,8.5 -19,19s8.5,19 19,19s19,-8.5 19,-19S64.5,35 54,35zM54,68c-7.7,0 -14,-6.3 -14,-14s6.3,-14 14,-14s14,6.3 14,14S61.7,68 54,68z"/>
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M68,63l-3,-3l-6,6l3,3z"/>
+</vector>

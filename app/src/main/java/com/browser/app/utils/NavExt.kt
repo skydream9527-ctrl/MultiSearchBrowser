@@ -1,7 +1,7 @@
 package com.browser.app.utils
 
 import androidx.navigation.NavController
-import com.browser.app.WebviewFragmentDirections
+import com.browser.app.ui.webview.WebviewFragmentDirections
 
 /**
  * 统一入口：从任意 Fragment 跳转到 WebviewFragment。

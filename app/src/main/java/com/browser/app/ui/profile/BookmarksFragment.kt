@@ -108,7 +108,7 @@ class BookmarkAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(bookmark: BookmarkEntity) {
-            binding.title.text = bookmark.title.ifEmpty { getString(R.string.no_title) }
+            binding.title.text = bookmark.title.ifEmpty { itemView.context.getString(R.string.no_title) }
             binding.url.text = bookmark.url
             binding.root.setOnClickListener { onItemClick(bookmark) }
             binding.root.setOnLongClickListener {

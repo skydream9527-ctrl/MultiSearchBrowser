@@ -122,7 +122,7 @@ class HistoryAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(history: HistoryEntity) {
-            binding.title.text = history.title.ifEmpty { getString(R.string.no_title) }
+            binding.title.text = history.title.ifEmpty { itemView.context.getString(R.string.no_title) }
             binding.url.text = history.url
             binding.timestamp.text = formatTimestamp(history.timestamp)
             binding.root.setOnClickListener { onItemClick(history) }

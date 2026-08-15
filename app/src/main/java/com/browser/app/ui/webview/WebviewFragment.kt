@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.autofill.AutofillManager
 import android.webkit.CookieManager
 import android.webkit.SafeBrowsingResponse
 import android.webkit.WebChromeClient
@@ -20,7 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.browser.app.WebviewFragmentArgs
+import com.browser.app.ui.webview.WebviewFragmentArgs
 import com.browser.app.databinding.FragmentWebviewBinding
 import com.browser.app.repository.BookmarkRepository
 import com.browser.app.repository.HistoryRepository
@@ -169,11 +170,14 @@ class WebviewFragment : Fragment() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             binding.webview.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
             // WebView 获得焦点时主动通知系统触发自动填充扫描
-            binding.webview.setOnFocusChangeListener { v, hasFocus ->
+            // notifyViewEntered/Exited 是 AutofillManager 的 API（非 View 的方法），
+            // 需从系统服务获取 AutofillManager 实例后调用
+            val autofillManager = requireContext().getSystemService(AutofillManager::class.java)
+            binding.webview.setOnFocusChangeListener { v: View, hasFocus: Boolean ->
                 if (hasFocus) {
-                    v.notifyViewEntered()
+                    autofillManager?.notifyViewEntered(v)
                 } else {
-                    v.notifyViewExited()
+                    autofillManager?.notifyViewExited(v)
                 }
             }
         }

@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.load
-import com.browser.app.ProfileFragmentDirections
+import com.browser.app.ui.profile.ProfileFragmentDirections
 import com.browser.app.R
 import com.browser.app.databinding.FragmentProfileBinding
 import com.browser.app.utils.PreferenceManager

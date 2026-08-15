@@ -113,7 +113,7 @@ class WindowAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(window: WindowEntity) {
-            binding.title.text = window.title.ifEmpty { getString(R.string.no_title) }
+            binding.title.text = window.title.ifEmpty { itemView.context.getString(R.string.no_title) }
             binding.url.text = window.url
             binding.root.setOnClickListener { onItemClick(window) }
             binding.closeBtn.setOnClickListener { onCloseClick(window) }
